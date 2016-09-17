@@ -1,0 +1,64 @@
+* trying to synchronize apple ical with linux
+
+so, i would like to have something that "plays well" with calfw (which
+does a very nice job giving a calendar display i emacs.
+
+** displaying a summary list
+
+it would look like a (sorted-by-date) list of calendar entries, just
+the summaries, i think.  but, emacs "invisible text" could hold the
+contents of the entries, so that incremental-search would find them.
+
+then, there would be a search function that would present a narrowed
+list of entries matching the search.  sort of like mh-e.
+
+as one scrolls the summary list, the calfw view could change, and vice
+versa: "tight" versus "loose" coupling.
+
+clicking/returning on one of the entries in the summary list would
+definitely get calfw to focus on it.  maybe it would open that
+specific entry (or day, i guess, as calfw doesn't seem to support just
+opening an entry).
+
+** synching with icloud (?)
+
+** adding/modifying an entry
+
+** "previous work"
+
+okay.  how do i deal with these?  [[https://github.com/geier?tab=repositories][here's a guy]] likely looking tools.
+
+[[http://computing.physics.harvard.edu/icloud][here]] is how to get the icloud address for ical.  but, it appears that
+the security options are "another icloud user" or "public".  and, i'm
+not sure what one does for contacts (though in theory that is
+carddav).
+
+[[https://discussions.apple.com/thread/3689451?start=0&tstart=0][a discussion]] on apple.  for android, there is [[https://discussions.apple.com/thread/5971237?start=0&tstart=0][something called
+smoothsync]] one case use.
+
+i guess: 
+1. keep everything in icloud, so works with iphones.
+2. move everything to google alternatives.
+3. implement a cloud server.
+
+for google, [[https://gitlab.com/goobook/goobook][goobook]] might work.  doesn't seem to have been updated for
+about a year.  [[https://www.linux.com/learn/how-sync-android-linux-desktop][some ways]] to synch google with desktop linux.
+
+[[https://github.com/eventable/vobject][vobject]] is a python package.  recent changes, so maybe up to date.
+maybe its ics_diff program/module could be coerced into doing
+duplicate suppression.
+
+there's a calendarserver project, which is apparently (?) Apple's.
+[[https://www.calendarserver.org/PyCalendar.html][py-calendar]] is part of that.  the pip seems to be pycalendar?
+
+[[https://github.com/kiwanami/emacs-calfw][emacs-calfw]] displays calendars.  seems to know how to read ics.  but,
+we don't want it re-reading the icloud server over and over again (i
+guess that should be manual, or "daVVVV").  it reads my huge backup
+file fairly well.
+
+there is an emacs 'vcard' package (which i've installed).  whatever
+the goobook (above) interface, but talking to a downloaded vcard
+database, might be nice.
+
+according to [[https://www.emacswiki.org/emacs/BbdbExportImportSync][this emacs wiki page]], [[http://asynk.io/][ASynK]]
+
