@@ -5,10 +5,30 @@
 ;; icalendar--all-events
 ;; from cfw:ical-get-data
 
+
+(defvar mycal:ignored_ics_tags '( acknowledged action attach
+                                  attendee begin calscale class
+                                  end method organizer priority
+                                  prodid rdate related-to status
+                                  transp trigger tzid tzname
+                                  tzoffsetfrom tzoffsetto version
+                                  x-apple-calendar-color
+                                  x-apple-default-alarm
+                                  x-apple-structured-location
+                                  x-apple-travel-advisory-behavior
+                                  x-apple-travel-start
+                                  x-wr-alarmuid x-wr-calname
+                                  x-wr-timezone))
+
+(defvar mycal:used_ics_tags '( created description dtend dtstamp
+                               dtstart exdate geo last-modified
+                               location recurrence-id rrule
+                               sequence summary uid url))
+
 (defun mycal:ical-convert-ical-to-mycal (ical-list)
   (loop with zone-map = (icalendar--convert-all-timezones ical-list)
         for e in (icalendar--all-events ical-list)
-        for event = (cfw:ical-convert-event e)
+        for event = (mycal:ical-convert-event e)
         if event
         if (cfw:event-end-date event)
         collect event into periods
