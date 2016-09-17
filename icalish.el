@@ -21,10 +21,43 @@
                                   x-wr-timezone))
 
 (defvar mycal:used_ics_tags '( created description dtend dtstamp
-                               dtstart exdate geo last-modified
+                               dtstart geo last-modified
                                location recurrence-id rrule
-                               sequence summary uid url))
+                               summary uid url))
 
+;; from (cfw:ical-event-get-dates)
+(defun mycal:ical--get-date (event tag)
+  "find a TAG in EVENT, and return date and time of it"
+  (let*
+      ((tval (icalendar--get-event-property event tag))
+       (tzone (icalendar--find-time-zone
+               (icalendar--get-event-property-attributes event tag) zone-map))
+       (tdecode (icalendar--decode-isodatetime tval nil tzone))
+       (tdate (cfw:decode-to-calendar tdecode))
+       (ttime (cfw:time (nth 2 tdecode) (nth 1 tdecode))))
+    (list tdate ttime)))
+       
+;; cribbed from calfw-ical.el
+(defun mycal:ical-convert-event (event)
+    (destructuring-bind (dtag date start end) (cfw:ical-event-get-dates event)
+    (make-mycal:event
+     :start-date  date
+     :start-time  start
+     :end-date    (when (equal dtag 'period) end)
+     :end-time    (when (equal dtag 'time)   end)
+     :created     (mycal:ical--get-date event 'CREATED)
+     :last-modified (mycal:ical--get-date event 'LAST-MODIFIED)
+     :geo         (icalendar--get-event-property event 'GEO)   
+     :title       (cfw:ical-sanitize-string
+                   (icalendar--get-event-property event 'SUMMARY))
+     :location    (cfw:ical-sanitize-string
+                   (icalendar--get-event-property event 'LOCATION))
+     :description (cfw:ical-sanitize-string
+                   (icalendar--get-event-property event 'DESCRIPTION))
+     :recurrence-id (icalendar--get-event-property event 'RECURRENCE-ID)
+     :rrule       (icalendar--get-event-property event 'RRULE))))
+
+;; cribbed from calfw-ical.el
 (defun mycal:ical-convert-ical-to-mycal (ical-list)
   (loop with zone-map = (icalendar--convert-all-timezones ical-list)
         for e in (icalendar--all-events ical-list)
@@ -40,6 +73,7 @@
           (message "Cannot handle this event, tag: %s" e))
         finally (return `((periods ,periods) ,@contents))))
 
+;; cribbed from calfw-ical.el
 (defun mycal:ical-get-data (url)
   (let ((data (assoc url cfw:ical-data-cache)))
     (unless data
