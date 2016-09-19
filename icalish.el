@@ -60,8 +60,8 @@
 
 (defun mycal:start-date-time-less-p (ev1 ev2)
   "does EV1 start before (or at same time) as EV2?"
-  (let ((date1 (reverse (mycal:event-start-date ev1)))
-        (date2 (reverse (mycal:event-start-date ev2)))
+  (let ((date1 (mycal:event-start-date ev1))
+        (date2 (mycal:event-start-date ev2))
         (time1 (mycal:event-start-time ev1))
         (time2 (mycal:event-start-time ev2)))
     (mycal:lexiless-p (append date1 time1)
@@ -78,12 +78,15 @@
        (tdate (cfw:decode-to-calendar tdecode))
        (ttime (cfw:time (nth 2 tdecode) (nth 1 tdecode))))
     (list tdate ttime)))
+
+(defun mycal:mmddyyyy2yyyymmdd (x)
+  (list (nth 2 x) (nth 0 x) (nth 1 x)))
        
 ;; cribbed from calfw-ical.el
 (defun mycal:ical-convert-event (event)
     (destructuring-bind (dtag date start end) (cfw:ical-event-get-dates event)
     (make-mycal:event
-     :start-date  date
+     :start-date  (mycal:mmddyyyy2yyyymmdd date)
      :start-time  start
      :end-date    (when (equal dtag 'period) end)
      :end-time    (when (equal dtag 'time)   end)
@@ -133,4 +136,18 @@
 (defun mycal:open-ical-calendar (url)
   (let* ((unsorted (copy-sequence (mycal:ical-get-data url)))
          (sorted (sort (cdr unsorted) 'mycal:start-date-time-less-p)))
-    sorted))
+    ;; create a buffer
+    (set-buffer (get-buffer-create "*mycal-event-list*"))
+    (erase-buffer)
+    ;; (setq buffer-read-only t)
+    (let ((cur-date nil))
+      (dolist (event sorted)
+        (let ((evdate (mycal:event-start-date event)))
+          ;; if current date not same as that of this event, write
+          ;; that out
+          (if (mycal:lexiless-p cur-date evdate)
+              (progn
+                (setq cur-date evdate)
+                (insert (format "%4d.%02d.%02d\n"
+                                (nth 0 evdate) (nth 1 evdate) (nth 2 evdate)))))
+          )))))
