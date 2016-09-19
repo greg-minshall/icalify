@@ -5,6 +5,23 @@
 ;; icalendar--all-events
 ;; from cfw:ical-get-data
 
+;; from calfw.el
+(defstruct mycal:event
+  title       ; event title [string]
+  start-date  ; start date of the event [cfw:date]
+  start-time  ; start time of the event (optional)
+  end-date    ; end date of the event [cfw:date] (optional)
+  end-time    ; end of the event (optional)
+  geo         ; lon/lat of this event
+  created     ; date/time of creation
+  last-modified                ; when was this event last modified
+  recurrence-id                ; XXX ???
+  rrule                        ; recurrence rule of this event (if any)
+  description ; event description [string] (optional)
+  location    ; location [strting] (optional)
+  source      ; [internal] source of the event
+  )
+
 
 (defvar mycal:ignored_ics_tags '( acknowledged action attach
                                   attendee begin calscale class
@@ -75,7 +92,7 @@
 
 ;; cribbed from calfw-ical.el
 (defun mycal:ical-get-data (url)
-  (let ((data (assoc url cfw:ical-data-cache)))
+  (let ((data (assoc url mycal:ical-data-cache)))
     (unless data
       (setq data (let ((cal-list
                         (cfw:ical-with-buffer url
@@ -83,5 +100,5 @@
                           (mycal:ical-convert-ical-to-mycal
                            (icalendar--read-element nil nil)))))
                    (cons url cal-list)))
-      (push data cfw:ical-data-cache))
+      (push data mycal:ical-data-cache))
     (cdr data)))
