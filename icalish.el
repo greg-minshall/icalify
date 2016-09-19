@@ -20,6 +20,8 @@
   description ; event description [string] (optional)
   location    ; location [strting] (optional)
   source      ; [internal] source of the event
+  uid         ; unique identifier for this event (?)
+  url         ; URL associated with this event
   )
 
 
@@ -44,10 +46,16 @@
 
 (defun mycal:lexiless-p (l1 l2)
   "is L1 less than L2, comparing element by element"
-  (if (< (car l1) (car l2))
-      t
-    (and (= (car l1) (car l2))
-         (mycal:lexiless-p (cdr l1) (cdr l2)))))
+  (or
+   (and (not l1) (not l2))
+   (let* ((one (car l1))
+          (two (car l2))
+          (test1 (if (not one) 0 one))
+          (test2 (if (not two) 0 two)))
+     (if (< test1 test2)
+         t
+       (and (= test1 test2)
+            (mycal:lexiless-p (cdr l1) (cdr l2)))))))
 
 
 (defun mycal:start-date-time-less-p (ev1 ev2)
@@ -89,7 +97,9 @@
      :description (cfw:ical-sanitize-string
                    (icalendar--get-event-property event 'DESCRIPTION))
      :recurrence-id (icalendar--get-event-property event 'RECURRENCE-ID)
-     :rrule       (icalendar--get-event-property event 'RRULE))))
+     :rrule       (icalendar--get-event-property event 'RRULE)
+     :uid         (icalendar--get-event-property event 'UID)
+     :url         (icalendar--get-event-property event 'URL))))
 
 ;; cribbed from calfw-ical.el
 (defun mycal:ical-convert-ical-to-mycal (ical-list)
@@ -119,3 +129,8 @@
                    (cons url cal-list)))
       (push data mycal:ical-data-cache))
     (cdr data)))
+
+(defun mycal:open-ical-calendar (url)
+  (let* ((unsorted (copy-sequence (mycal:ical-get-data url)))
+         (sorted (sort (cdr unsorted) 'mycal:start-date-time-less-p)))
+    sorted))
