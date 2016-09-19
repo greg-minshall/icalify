@@ -42,46 +42,22 @@
                                location recurrence-id rrule
                                summary uid url))
 
-(defun mycal:lexiless (l1 l2)
+(defun mycal:lexiless-p (l1 l2)
   "is L1 less than L2, comparing element by element"
   (if (< (car l1) (car l2))
       t
     (and (= (car l1) (car l2))
-         (mycal:lexiless (cdr l1) (cdr l2)))))
+         (mycal:lexiless-p (cdr l1) (cdr l2)))))
 
-(defun mycal:compare-date (date1 date2)
-  (let ((y1 (nth 2 date1))
-        (y2 (nth 2 date2))
-        (m1 (nth 1 date1))
-        (m2 (nth 1 date2))
-        (d1 (nth 0 date1))
-        (d2 (nth 0 date2)))
-    (or
-     (< y1 y2)
-     (and (= y1 y2)
-          (or
-           (< m1 m2)
-           (and (= m1 m2)
-                (< d1 d2)))))))
 
-(defun mycal:compare-time (time1 time2)
-  (let ((h1 (nth 0 time1))
-        (h2 (nth 0 time2))
-        (m1 (nth 1 time1))
-        (m2 (nth 1 time2)))
-    
-
-(defun mycal:compare-start-date-time (ev1 ev2)
+(defun mycal:start-date-time-less-p (ev1 ev2)
   "does EV1 start before (or at same time) as EV2?"
-  (let ((date1 (mycal:event-start-date ev1))
-        (date2 (mycal:event-start-date ev2)))
-    (if (mycal:compare-dates date1 date2)
-        t
-      (if (mycal:compare-dates date2 date1)
-          nil
-        (let ((time1 (mycal:event-start-time ev1))
-              (time2 (mycal:event-start-time ev2)))
-          (not (mycal:compare-times date2 date1)))))))
+  (let ((date1 (reverse (mycal:event-start-date ev1)))
+        (date2 (reverse (mycal:event-start-date ev2)))
+        (time1 (mycal:event-start-time ev1))
+        (time2 (mycal:event-start-time ev2)))
+    (mycal:lexiless-p (append date1 time1)
+                      (append date2 time2))))
 
 ;; from (cfw:ical-event-get-dates)
 (defun mycal:ical--get-date (event tag)
