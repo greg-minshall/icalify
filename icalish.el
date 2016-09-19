@@ -133,6 +133,19 @@
       (push data mycal:ical-data-cache))
     (cdr data)))
 
+(defun mycal:format-time (time)
+  "return a string reprenting a given time of day"
+  (let ((hh (nth 0 time))
+        (mm (nth 1 time)))
+    (if (not hh)
+        "all day"
+      (format "%02d:%02d" hh mm))))
+
+(defun mycal:summary-normalize (summary)
+  (if (not summary)
+      ""
+    summary))
+
 (defun mycal:open-ical-calendar (url)
   (let* ((unsorted (copy-sequence (mycal:ical-get-data url)))
          (sorted (sort (cdr unsorted) 'mycal:start-date-time-less-p)))
@@ -142,7 +155,9 @@
     ;; (setq buffer-read-only t)
     (let ((cur-date nil))
       (dolist (event sorted)
-        (let ((evdate (mycal:event-start-date event)))
+        (let ((evdate (mycal:event-start-date event))
+              (evtime (mycal:format-time (mycal:event-start-time event)))
+              (evsummary (mycal:summary-normalize (mycal:event-title event))))
           ;; if current date not same as that of this event, write
           ;; that out
           (if (mycal:lexiless-p cur-date evdate)
@@ -150,4 +165,5 @@
                 (setq cur-date evdate)
                 (insert (format "%4d.%02d.%02d\n"
                                 (nth 0 evdate) (nth 1 evdate) (nth 2 evdate)))))
-          )))))
+          (insert (format "%s:  " evtime))
+          (insert (format "%s\n" evsummary)))))))
