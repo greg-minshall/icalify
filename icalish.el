@@ -193,7 +193,10 @@ returns the new date."
         (start (point)))
     ;; if current date not same as that of this event, write
     ;; that out
-    (insert (format "%s:  " evtime))
+    (insert (format "%s:" evtime))
+    (if evdescription
+        (insert "+ ")
+      (insert "  "))
     (insert (format "%s\n" evsummary))
     (if evdescription
         (add-text-properties
