@@ -124,7 +124,6 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
 
 ;; cribbed from calfw-ical.el
 (defun mycal:ical-convert-event (event)
-  (message (format "%s" (icalendar--get-event-property event 'LOCATION)))
   (destructuring-bind (dtag date start end) (cfw:ical-event-get-dates event)
     (make-mycal:event
      :start-date  date
@@ -215,12 +214,13 @@ returns the new date."
       (if evlocation
           (progn
             (move-to-column col t)
-            (message "%s" (mycal:onelineize evlocation))
             (insert (format "%s\n" (mycal:onelineize evlocation))))))
-    (if evdescription
-        (add-text-properties
-         start (1- (point))
-         (list 'mouse-face 'highlight 'help-echo evdescription)))))
+    (let ((end (1- (point))))
+      (add-face-text-property start end '(:background "red"))
+      (if evdescription
+          (add-text-properties
+           start end
+           (list 'mouse-face 'highlight 'help-echo evdescription))))))
 
 (defun mycal:open-ical-calendar (url)
   (let* ((unsorted (copy-sequence (mycal:ical-get-data url)))
