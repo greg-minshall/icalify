@@ -46,6 +46,15 @@
                                location recurrence-id rrule
                                summary uid url))
 
+(defvar mycal:keymap
+  (cfw:define-keymap
+   '(("q" . bury-buffer)))
+  "keymap for mycal event list")
+   
+
+(defun mycal:install-keymap ()
+    (use-local-map mycal:keymap))
+
 (defun mycal:lexiless-p (l1 l2)
   "is L1 less than L2, comparing element by element"
   (or
@@ -148,12 +157,31 @@
       ""
     summary))
 
+(defun mycal:spit-date (event)
+  "put a line in the buffer for a new date.  for convenience,
+returns the new date."
+  (let ((evdate (mycal:event-start-date event)))
+  (insert (format "%4d.%02d.%02d\n"
+                  (nth 0 evdate) (nth 1 evdate) (nth 2 evdate)))
+  evdate))
+
+(defun mycal:spit-event (event)
+  "insert an event entry into the buffer."
+  (let ((evtime (mycal:format-time (mycal:event-start-time event)))
+        (evsummary (mycal:summary-normalize (mycal:event-title event))))
+    ;; if current date not same as that of this event, write
+    ;; that out
+    (insert (format "%s:  " evtime))
+    (insert (format "%s\n" evsummary))))
+  
+
 (defun mycal:open-ical-calendar (url)
   (let* ((unsorted (copy-sequence (mycal:ical-get-data url)))
          (sorted (sort (cdr unsorted) 'mycal:start-date-time-less-p)))
     ;; create a buffer
     (set-buffer (get-buffer-create "*mycal-event-list*"))
     (erase-buffer)
+    (mycal:install-keymap)
     ;; (setq buffer-read-only t)
     (let ((cur-date nil))
       (dolist (event sorted)
@@ -163,9 +191,5 @@
           ;; if current date not same as that of this event, write
           ;; that out
           (if (mycal:lexiless-p cur-date evdate)
-              (progn
-                (setq cur-date evdate)
-                (insert (format "%4d.%02d.%02d\n"
-                                (nth 0 evdate) (nth 1 evdate) (nth 2 evdate)))))
-          (insert (format "%s:  " evtime))
-          (insert (format "%s\n" evsummary)))))))
+              (setq cur-date (mycal:spit-date event)))
+          (mycal:spit-event event))))))
