@@ -46,14 +46,32 @@
                                location recurrence-id rrule
                                summary uid url))
 
-(defvar mycal:keymap
+(defconst mycal:kaymap-prev
   (cfw:define-keymap
-   '(("q" . bury-buffer)))
-  "keymap for mycal event list")
-   
+   '(("e" . mycal:navi-prev-event-command)
+     ("d" . mycal:navi-prev-day-command)
+     ("w" . mycal:navi-prev-week-command)
+     ("2" . mycal:navi-prev-two-week-command)
+     ("m" . mycal:navi-prev-month-command)
+     ("y" . mycal:navi-prev-year-command))))
 
+(defconst mycal:kaymap-next
+  (cfw:define-keymap
+   '(("e" . mycal:navi-next-event-command)
+     ("d" . mycal:navi-next-day-command)
+     ("w" . mycal:navi-next-week-command)
+     ("2" . mycal:navi-next-two-week-command)
+     ("m" . mycal:navi-next-month-command)
+     ("y" . mycal:navi-next-year-command))))
+
+(defconst mycal:keymap-list
+  '(("n" . mycal:keymap-next)
+    ("p" . mycal:keymap-prev)
+    ("q" . bury-buffer))
+   "keymap for mycal event list")
+   
 (defun mycal:install-keymap ()
-    (use-local-map mycal:keymap))
+  (use-local-map (cfw:define-keymap mycal:keymap-list)))
 
 (defun mycal:lexiless-p (l1 l2)
   "is L1 less than L2, comparing element by element"
