@@ -7,20 +7,12 @@
 ;; from cfw:ical-get-data
 
 ;; from calfw.el
-(defstruct mycal:event
-  title       ; event title [string]
-  start-date  ; start date of the event [cfw:date]
-  start-time  ; start time of the event (optional)
-  end-date    ; end date of the event [cfw:date] (optional)
-  end-time    ; end of the event (optional)
+(defstruct (mycal:event (:include cfw:event))
   geo         ; lon/lat of this event
   created     ; date/time of creation
   last-modified                ; when was this event last modified
   recurrence-id                ; XXX ???
   rrule                        ; recurrence rule of this event (if any)
-  description ; event description [string] (optional)
-  location    ; location [strting] (optional)
-  source      ; [internal] source of the event
   uid         ; unique identifier for this event (?)
   url         ; URL associated with this event
   )
