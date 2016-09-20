@@ -17,6 +17,8 @@
   url         ; URL associated with this event
   )
 
+(defvar mycal:ical-last-ical nil)
+
 (defvar mycal:ical-data-cache nil "a list of (url . ics-data)")
 
 (defvar mycal:ignored_ics_tags '( acknowledged action attach
@@ -92,14 +94,21 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
        (and (= test1 test2)
             (mycal:lexiless-p (cdr l1) (cdr l2)))))))
 
+(defun mycal:lexi-date (date)
+  (list (nth 2 date) (nth 1 date) (nth 0 date)))
+
 (defun mycal:start-date-time-less-p (ev1 ev2)
   "does EV1 start before (or at same time) as EV2?"
-  (let ((date1 (mycal:event-start-date ev1))
-        (date2 (mycal:event-start-date ev2))
+  (let ((date1 (mycal:lexi-date (mycal:event-start-date ev1)))
+        (date2 (mycal:lexi-date (mycal:event-start-date ev2)))
         (time1 (mycal:event-start-time ev1))
         (time2 (mycal:event-start-time ev2)))
     (mycal:lexiless-p (append date1 time1)
                       (append date2 time2))))
+
+(defun mycal:dates-less-p (date1 date2)
+  "returns true if DATE1 earlier than DATE2"
+  (mycal:lexiless-p (mycal:lexi-date date1) (mycal:lexi-date date2)))
 
 ;; from (cfw:ical-event-get-dates)
 (defun mycal:ical--get-date (event tag)
@@ -115,21 +124,22 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
 
 ;; cribbed from calfw-ical.el
 (defun mycal:ical-convert-event (event)
+  (message (format "%s" (icalendar--get-event-property event 'LOCATION)))
   (destructuring-bind (dtag date start end) (cfw:ical-event-get-dates event)
     (make-mycal:event
      :start-date  date
      :start-time  start
      :end-date    (when (equal dtag 'period) end)
      :end-time    (when (equal dtag 'time)   end)
-     :created     (mycal:ical--get-date event 'CREATED)
-     :last-modified (mycal:ical--get-date event 'LAST-MODIFIED)
-     :geo         (icalendar--get-event-property event 'GEO)   
      :title       (cfw:ical-sanitize-string
                    (icalendar--get-event-property event 'SUMMARY))
      :location    (cfw:ical-sanitize-string
                    (icalendar--get-event-property event 'LOCATION))
      :description (cfw:ical-sanitize-string
                    (icalendar--get-event-property event 'DESCRIPTION))
+     :created     (mycal:ical--get-date event 'CREATED)
+     :last-modified (mycal:ical--get-date event 'LAST-MODIFIED)
+     :geo         (icalendar--get-event-property event 'GEO)   
      :recurrence-id (icalendar--get-event-property event 'RECURRENCE-ID)
      :rrule       (icalendar--get-event-property event 'RRULE)
      :uid         (icalendar--get-event-property event 'UID)
@@ -137,6 +147,7 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
 
 ;; cribbed from calfw-ical.el
 (defun mycal:ical-convert-ical-to-mycal (ical-list)
+  (setq mycal:ical-last-ical (copy-sequence ical-list))
   (loop with zone-map = (icalendar--convert-all-timezones ical-list)
         for e in (icalendar--all-events ical-list)
         for event = (mycal:ical-convert-event e)
@@ -172,23 +183,25 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
         "all day"
       (format "%02d:%02d" hh mm))))
 
-(defun mycal:summary-normalize (summary)
-  (if (not summary)
+(defun mycal:onelineize (text)
+  (if (not text)
       ""
-    summary))
+    (replace-regexp-in-string "  +" " "
+                              (replace-regexp-in-string "\n" " " text))))
 
 (defun mycal:spit-date (event)
   "put a line in the buffer for a new date.  for convenience,
 returns the new date."
   (let ((evdate (mycal:event-start-date event)))
-  (insert (format "%4d.%02d.%02d\n"
+  (insert (format "%02d.%02d.%02d\n"
                   (nth 0 evdate) (nth 1 evdate) (nth 2 evdate)))
   evdate))
 
 (defun mycal:spit-event (event)
   "insert an event entry into the buffer."
   (let ((evtime (mycal:format-time (mycal:event-start-time event)))
-        (evsummary (mycal:summary-normalize (mycal:event-title event)))
+        (evsummary (mycal:onelineize (mycal:event-title event)))
+        (evlocation (mycal:event-location event))
         (evdescription (mycal:event-description event))
         (start (point)))
     ;; if current date not same as that of this event, write
@@ -197,7 +210,13 @@ returns the new date."
     (if evdescription
         (insert "+ ")
       (insert "  "))
-    (insert (format "%s\n" evsummary))
+    (let ((col (current-column)))
+      (insert (format "%s\n" evsummary))
+      (if evlocation
+          (progn
+            (move-to-column col t)
+            (message "%s" (mycal:onelineize evlocation))
+            (insert (format "%s\n" (mycal:onelineize evlocation))))))
     (if evdescription
         (add-text-properties
          start (1- (point))
@@ -214,10 +233,9 @@ returns the new date."
     (let ((cur-date nil))
       (dolist (event sorted)
         (let ((evdate (mycal:event-start-date event))
-              (evtime (mycal:format-time (mycal:event-start-time event)))
-              (evsummary (mycal:summary-normalize (mycal:event-title event))))
+              (evtime (mycal:format-time (mycal:event-start-time event))))
           ;; if current date not same as that of this event, write
           ;; that out
-          (if (mycal:lexiless-p cur-date evdate)
+          (if (mycal:dates-less-p cur-date evdate)
               (setq cur-date (mycal:spit-date event)))
           (mycal:spit-event event))))))
