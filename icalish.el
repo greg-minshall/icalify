@@ -1,4 +1,5 @@
 (require 'calfw)
+(require 'calfw-ical)
 (require 'icalendar)
 
 ;; icalendar--convert-all-timezones ical-list)
@@ -24,6 +25,7 @@
   url         ; URL associated with this event
   )
 
+(defvar mycal:ical-data-cache nil "a list of (url . ics-data)")
 
 (defvar mycal:ignored_ics_tags '( acknowledged action attach
                                   attendee begin calscale class
