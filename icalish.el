@@ -113,14 +113,11 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
        (ttime (cfw:time (nth 2 tdecode) (nth 1 tdecode))))
     (list tdate ttime)))
 
-(defun mycal:mmddyyyy2yyyymmdd (x)
-  (list (nth 2 x) (nth 0 x) (nth 1 x)))
-       
 ;; cribbed from calfw-ical.el
 (defun mycal:ical-convert-event (event)
     (destructuring-bind (dtag date start end) (cfw:ical-event-get-dates event)
     (make-mycal:event
-     :start-date  (mycal:mmddyyyy2yyyymmdd date)
+     :start-date  date
      :start-time  start
      :end-date    (when (equal dtag 'period) end)
      :end-time    (when (equal dtag 'time)   end)
