@@ -166,25 +166,28 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
   (let ((event (get-text-property (point) 'mycal:event)))
     (mycal:goto-date-offset event '(1 0 0) -1 num)))
 
-(defun mycal:navi-prev-week-command (&optional num)
-  (interactive)
-  (let ((event (get-text-property (point) 'mycal:event)))
-    (mycal:goto-date-offset event '(7 0 0) -1 num)))
-
-(defun mycal:navi-prev-2week-command (&optional num)
-  (interactive)
-  (let ((event (get-text-property (point) 'mycal:event)))
-    (mycal:goto-date-offset event '(14 0 0) -1 num)))
-
-(defun mycal:navi-prev-month-command (&optional num)
-  (interactive)
-  (let ((event (get-text-property (point) 'mycal:event)))
-    (mycal:goto-date-offset event '(0 1 0) -1 num)))
-
-(defun mycal:navi-prev-year-command (&optional num)
-  (interactive)
-  (let ((event (get-text-property (point) 'mycal:event)))
-    (mycal:goto-date-offset event '(0 0 1) -1 num)))
+(defmacro mycal:navi-macro (DIR UNIT)
+  "expand to produce a mycal:navi-DIR-UNIT-command"
+  (if (symbolp DIR)
+      (setq DIR (symbol-name DIR)))
+  (if (symbolp UNIT)
+      (setq UNIT (symbol-name UNIT)))
+  (let ((command (intern (concat "mycal:navi-" DIR "-" UNIT "-command")))
+        (offset (cond
+                 ((equal UNIT "day") '(1 0 0))
+                 ((equal UNIT "week") '(7 0 0))
+                 ((equal UNIT "2week") '(14 0 0))
+                 ((equal UNIT "month") '(0 1 0))
+                 ((equal UNIT "year") '(0 0 1))
+                 (t (error "UNIT must be one of day, week, 2week, month, year"))))
+        (sign (cond
+                  ((equal DIR "prev") -1)
+                  ((equal DIR "next") 1)
+                  (t (error "DIR must be one of prev, next")))))
+    (list 'defun command '(&optional num)
+    '(interactive)
+    (list 'let '((event (get-text-property (point) 'mycal:event)))
+      (list 'mycal:goto-date-offset 'event offset sign)))))
 
 (defun mycal:dates-less-p (date1 date2)
   "returns true if DATE1 earlier than DATE2"
