@@ -191,12 +191,15 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
 (defun mycal:spit-date (event)
   "put a line in the buffer for a new date.  for convenience,
 returns the new date."
-  (let ((evdate (mycal:event-start-date event)))
+  (let ((evdate (mycal:event-start-date event))
+        (start (point)))
   (insert (format "%02d.%02d.%02d\n"
                   (nth 0 evdate) (nth 1 evdate) (nth 2 evdate)))
+  (let ((end (1- (point))))
+    (add-face-text-property start end '(:background "gray90")))
   evdate))
 
-(defun mycal:spit-event (event)
+(defun mycal:spit-event (event counter)
   "insert an event entry into the buffer."
   (let ((evtime (mycal:format-time (mycal:event-start-time event)))
         (evsummary (mycal:onelineize (mycal:event-title event)))
@@ -210,13 +213,19 @@ returns the new date."
         (insert "+ ")
       (insert "  "))
     (let ((col (current-column)))
-      (insert (format "%s\n" evsummary))
+      (insert (format "%s" evsummary))
       (if evlocation
           (progn
+            (move-to-column 80 t)
+            (insert "\n")
             (move-to-column col t)
-            (insert (format "%s\n" (mycal:onelineize evlocation))))))
-    (let ((end (1- (point))))
-      (add-face-text-property start end '(:background "red"))
+            (insert (format "%s" (mycal:onelineize evlocation))))))
+    (move-to-column 80 t)
+    (insert "\n")
+    (let ((end (1- (point)))
+          (color (if (= (% counter 2) 0) "gray70" "gray80")))
+      ;; XXX really need fixed width buffer, fill rectangles
+      (add-face-text-property start end (list ':background color))
       (if evdescription
           (add-text-properties
            start end
@@ -230,12 +239,14 @@ returns the new date."
     (erase-buffer)
     (mycal:install-keymap)
     ;; (setq buffer-read-only t)
-    (let ((cur-date nil))
+    (let ((cur-date nil)
+          (counter 0))
       (dolist (event sorted)
+        (setq counter (1+ counter))
         (let ((evdate (mycal:event-start-date event))
               (evtime (mycal:format-time (mycal:event-start-time event))))
           ;; if current date not same as that of this event, write
           ;; that out
           (if (mycal:dates-less-p cur-date evdate)
               (setq cur-date (mycal:spit-date event)))
-          (mycal:spit-event event))))))
+          (mycal:spit-event event counter))))))
