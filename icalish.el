@@ -7,6 +7,14 @@
 ;; from cfw:ical-get-data
 
 ;; from calfw.el
+
+;; to get going:
+;; (progn
+;;  (let ((where "/home/minshall/work/misc/icalish/test2.ics"))
+;;    (setq mycal:ical-data-cache '())
+;;    (let ((cfwbuffer (cfw:open-ical-calendar where)))
+;;      (mycal:open-ical-calendar where cfwbuffer)))
+
 (defstruct (mycal:event (:include cfw:event))
   geo         ; lon/lat of this event
   created     ; date/time of creation
@@ -87,18 +95,22 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
 
 (defun mycal:open-calfw (&optional num)
   (interactive "p")
-  (let ((event (get-text-property (point) 'mycal:event)))
+  (let ((event (get-text-property (point) 'mycal:event))
+        (cfwbuffer mycal:cfwbuffer))
     (if event
         (progn
+          (set-buffer cfwbuffer)
           (cfw:navi-goto-date (mycal:event-start-date event))
-          (set-buffer mycal:cfwbuffer))
+          (pop-to-buffer cfwbuffer))
       (message "not pointing at an event..."))))
 
 (defun mycal:open-event (&optional num)
   (interactive "p")
   (let ((event (get-text-property (point) 'mycal:event)))
     (if event
-        )))
+        (progn
+          (mycal:open-calfw num)        ; open calendar
+          (cfw:show-details-command)))))
 
 (defun mycal:lexiless-p (l1 l2)
   "is L1 less than L2, comparing element by element"
