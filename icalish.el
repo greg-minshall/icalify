@@ -181,13 +181,14 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
                  ((equal UNIT "year") '(0 0 1))
                  (t (error "UNIT must be one of day, week, 2week, month, year"))))
         (sign (cond
-                  ((equal DIR "prev") -1)
-                  ((equal DIR "next") 1)
-                  (t (error "DIR must be one of prev, next")))))
+               ((equal DIR "prev") -1)
+               ((equal DIR "next") 1)
+               (t (error "DIR must be one of prev, next")))))
     (list 'defun command '(&optional num)
-    '(interactive)
-    (list 'let '((event (get-text-property (point) 'mycal:event)))
-      (list 'mycal:goto-date-offset 'event offset sign)))))
+          '(interactive)
+          (list 'let '((event (get-text-property (point) 'mycal:event)))
+                (list 'mycal:goto-date-offset 'event offset sign)))))
+
 
 (defun mycal:dates-less-p (date1 date2)
   "returns true if DATE1 earlier than DATE2"
