@@ -161,11 +161,6 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
   (interactive)
   (debug))
 
-(defun mycal:navi-prev-day-command (&optional num)
-  (interactive)
-  (let ((event (get-text-property (point) 'mycal:event)))
-    (mycal:goto-date-offset event '(1 0 0) -1 num)))
-
 (defmacro mycal:navi-macro (DIR UNIT)
   "expand to produce a mycal:navi-DIR-UNIT-command"
   (if (symbolp DIR)
@@ -174,11 +169,11 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
       (setq UNIT (symbol-name UNIT)))
   (let ((command (intern (concat "mycal:navi-" DIR "-" UNIT "-command")))
         (offset (cond
-                 ((equal UNIT "day") '(1 0 0))
-                 ((equal UNIT "week") '(7 0 0))
-                 ((equal UNIT "2week") '(14 0 0))
-                 ((equal UNIT "month") '(0 1 0))
-                 ((equal UNIT "year") '(0 0 1))
+                 ((equal UNIT "day") '(list 1 0 0))
+                 ((equal UNIT "week") '(list 7 0 0))
+                 ((equal UNIT "2week") '(list 14 0 0))
+                 ((equal UNIT "month") '(list 0 1 0))
+                 ((equal UNIT "year") '(list 0 0 1))
                  (t (error "UNIT must be one of day, week, 2week, month, year"))))
         (sign (cond
                ((equal DIR "prev") -1)
@@ -187,7 +182,26 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
     `(defun ,command (&optional num)
           (interactive)
           (let ((event (get-text-property (point) 'mycal:event)))
-                (mycal:goto-date-offset event ,offset ,sign)))))
+                (mycal:navi-goto-date-offset event ,offset ,sign)))))
+
+(defun mycal:navi-goto-date-offset (event offset multiple)
+  "go to the date in EVENT plus/minus a MULTIPLE of
+  OFFSET (plus/minus depending on the sign of MULTIPLE).  in the
+  case nothing exists on the target date, then go to the next
+  available date furtheset from the current date (will also
+  depend on sign of MULTIPLE)."
+  (let* ((curdate (mycal:event-start-date event))
+         (total-offset (* offset multiple))
+         (target-decoded (icalendar--add-decoded-times
+                          (list 0 0 0
+                                (nth 1 curdate) (nth 0 curdate) (nth 2 curdate))
+                          (list 0 0 0 (nth 1 total-offset)
+                                (nth 0 total-offset) (nth 2 total-offset))))
+         (target (list (nth 4 target-decoded)
+                       (nth 3 target-decoded)
+                       (nth 5 target-decoded))))
+    (mycal:navi-goto-date target)))
+         
 
 ;; now, create all these functions in one swell fwoop
 (dolist (dir '(prev next))
