@@ -184,10 +184,15 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
                ((equal DIR "prev") -1)
                ((equal DIR "next") 1)
                (t (error "DIR must be one of prev, next")))))
-    (list 'defun command '(&optional num)
-          '(interactive)
-          (list 'let '((event (get-text-property (point) 'mycal:event)))
-                (list 'mycal:goto-date-offset 'event offset sign)))))
+    `(defun ,command (&optional num)
+          (interactive)
+          (let ((event (get-text-property (point) 'mycal:event)))
+                (mycal:goto-date-offset event ,offset ,sign)))))
+
+;; now, create all these functions in one swell fwoop
+(dolist (dir '(prev next))
+  (dolist (unit '(day week 2week month year))
+    (eval `(mycal:navi-macro ,dir ,unit))))
 
 
 (defun mycal:dates-less-p (date1 date2)
