@@ -2,6 +2,20 @@
 (require 'calfw-ical)
 (require 'icalendar)
 
+;; TODO
+;; - next event, day, etc.
+;; - search
+;; - read-only
+;; - search, narrow, widen, ?sort?
+;; - L in calfw to come back to list
+;; - i want calfw to obey [np][edw2my]
+;; - [be][edw2my] for "beginning", "end"
+;; - recurring
+;; - use calfw formats for dates, times
+;; - multiple calendars -- enable, disable
+;; - CALDAV!!!
+;; - when CALDAV, updates
+
 ;; icalendar--convert-all-timezones ical-list)
 ;; icalendar--all-events
 ;; from cfw:ical-get-data
@@ -136,6 +150,41 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
         (time2 (mycal:event-start-time ev2)))
     (mycal:lexiless-p (append date1 time1)
                       (append date2 time2))))
+
+(defun mycal:goto-date (date &optional back)
+  "go to an event on the given DATE.  if there is no event on
+  DATE, and BACK is non-nil, go to the first event earlier than
+  DATE, otherwise the first event later than DATE."
+  )
+
+(defun mycal:navi-prev-event-command ()
+  (interactive)
+  (debug))
+
+(defun mycal:navi-prev-day-command (&optional num)
+  (interactive)
+  (let ((event (get-text-property (point) 'mycal:event)))
+    (mycal:goto-date-offset event '(1 0 0) -1 num)))
+
+(defun mycal:navi-prev-week-command (&optional num)
+  (interactive)
+  (let ((event (get-text-property (point) 'mycal:event)))
+    (mycal:goto-date-offset event '(7 0 0) -1 num)))
+
+(defun mycal:navi-prev-2week-command (&optional num)
+  (interactive)
+  (let ((event (get-text-property (point) 'mycal:event)))
+    (mycal:goto-date-offset event '(14 0 0) -1 num)))
+
+(defun mycal:navi-prev-month-command (&optional num)
+  (interactive)
+  (let ((event (get-text-property (point) 'mycal:event)))
+    (mycal:goto-date-offset event '(0 1 0) -1 num)))
+
+(defun mycal:navi-prev-year-command (&optional num)
+  (interactive)
+  (let ((event (get-text-property (point) 'mycal:event)))
+    (mycal:goto-date-offset event '(0 0 1) -1 num)))
 
 (defun mycal:dates-less-p (date1 date2)
   "returns true if DATE1 earlier than DATE2"
