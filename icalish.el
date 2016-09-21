@@ -89,7 +89,9 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
   (interactive "p")
   (let ((event (get-text-property (point) 'mycal:event)))
     (if event
-        (cfw:open-calendar-buffer :date (mycal:event-start-date event))
+        (progn
+          (cfw:navi-goto-date (mycal:event-start-date event))
+          (set-buffer mycal:cfwbuffer))
       (message "not pointing at an event..."))))
 
 (defun mycal:open-event (&optional num)
@@ -250,12 +252,16 @@ returns the new date."
            start end
            (list 'mouse-face 'highlight 'help-echo evdescription))))))
 
-(defun mycal:open-ical-calendar (url)
+(defun mycal:open-ical-calendar (url &optional cfwbuffer)
   (let* ((unsorted (copy-sequence (mycal:ical-get-data url)))
          (sorted (sort (cdr unsorted) 'mycal:start-date-time-less-p)))
     ;; create a buffer
     (set-buffer (get-buffer-create "*mycal-event-list*"))
     (erase-buffer)
+    (let ((mybuffer (current-buffer)))
+      (with-current-buffer cfwbuffer
+        (setq-local mycal:mycalbuffer mybuffer)))
+    (setq-local mycal:cfwbuffer cfwbuffer)
     (mycal:install-keymap)
     ;; (setq buffer-read-only t)
     (let ((cur-date nil)
