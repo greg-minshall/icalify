@@ -40,6 +40,7 @@
                                location recurrence-id rrule
                                summary uid url))
 
+;; XXX this could be folded back into cfw:define-keymap
 (defun mycal:define-keymap (keymap-list)
   "[internal] Key map definition utility.
 KEYMAP-LIST is a source list like ((key . command) ... )."
@@ -72,14 +73,30 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
 
 (defconst mycal:keymap
   (mycal:define-keymap
-   '(("n" . (mycal:define-keymap mycal:keymap-next))
+   '(("M" . mycal:open-calfw)
+     ("n" . (mycal:define-keymap mycal:keymap-next))
      ("p" . (mycal:define-keymap mycal:keymap-prev))
+     ("<RET>" . mycal:open-event)
+     ("<down-mouse-1>" . mycal:open-event)
      ("q" . bury-buffer)))
   "keymap for mycal event list")
 
    
 (defun mycal:install-keymap ()
   (use-local-map mycal:keymap))
+
+(defun mycal:open-calfw (&optional num)
+  (interactive "p")
+  (let ((event (get-text-property (point) 'mycal:event)))
+    (if event
+        (cfw:open-calendar-buffer :date (mycal:event-start-date event))
+      (message "not pointing at an event..."))))
+
+(defun mycal:open-event (&optional num)
+  (interactive "p")
+  (let ((event (get-text-property (point) 'mycal:event)))
+    (if event
+        )))
 
 (defun mycal:lexiless-p (l1 l2)
   "is L1 less than L2, comparing element by element"
@@ -205,7 +222,8 @@ returns the new date."
         (evsummary (mycal:onelineize (mycal:event-title event)))
         (evlocation (mycal:event-location event))
         (evdescription (mycal:event-description event))
-        (start (point)))
+        (start (point))
+        (evcopy (copy-mycal:event event)))
     ;; if current date not same as that of this event, write
     ;; that out
     (insert (format "%s:" evtime))
@@ -226,6 +244,7 @@ returns the new date."
           (color (if (= (% counter 2) 0) "gray70" "gray80")))
       ;; XXX really need fixed width buffer, fill rectangles
       (add-face-text-property start end (list ':background color))
+      (add-text-properties start end (list 'mycal:event evcopy))
       (if evdescription
           (add-text-properties
            start end
