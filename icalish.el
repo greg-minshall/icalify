@@ -419,5 +419,7 @@ returns the new date."
           ;; that out
           (if (mycal:dates-less-p cur-date evdate)
               (setq cur-date (mycal:spit-date event)))
-          (setq mycal:event-indices (append mycal:event-indices (list (point))))
-          (mycal:spit-event event counter))))))
+          (setq mycal:event-indices (push (point) mycal:event-indices))
+          (mycal:spit-event event counter))))
+    (setq mycal:event-indices (reverse mycal:event-indices))
+    (setq buffer-read-only t)))
