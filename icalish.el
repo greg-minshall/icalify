@@ -203,10 +203,8 @@ get.  return the event whose date is on the SIGN side of DATE"
   (let* ((mid (/ (+ min max) 2))
          (event-mid (mycal:--nth-event mid))
          (date-mid  (mycal:event-start-date event-mid)))
-    (message "binary-search %s %d %d %d %d %s"
-             (mycal:--date2str date) sign min mid max (mycal:--date2str date-mid))
     (if (equal date date-mid)
-        (mycal:nth-event-index mid)
+        (mycal:--nth-event-point mid)
       (if (mycal:date-less-p date date-mid)
           (mycal:--date-binary-search date sign min mid)
         (if (or (= min mid) (= mid max))
