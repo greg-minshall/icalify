@@ -103,7 +103,8 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
      ("p" . (mycal:define-keymap mycal:keymap-prev))
      ("<RET>" . mycal:open-event)
      ("<down-mouse-1>" . mycal:open-event)
-     ("q" . bury-buffer)))
+     ("q" . bury-buffer)
+     ("t" . mycal:navi-today-command)))
   "keymap for mycal event list")
 
    
@@ -160,7 +161,7 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
                       (append date2 time2))))
 
 (defun mycal:--nth-event-point (nput)
-  "return the N'th event"
+  "return the buffer position of the N'th event"
   (let ((n (min (max nput 0) (1- (length mycal:event-indices)))))
     (if (= n 0)
         (error "no events in calendar!")
@@ -175,51 +176,73 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
           (error "misplaced event")
         event))))
 
-(defun mycal:--date-not-found (date sign n)
-  "unable to find an event at DATE, N is the closest we could
-get.  return the event whose date is on the SIGN side of DATE"
-
-  ;;          |  date < n-date  | date > n-date |
-  ;;          +---------------------------------+
-  ;; sign < 0 |    prev(n-date) | n-date        |
-  ;; -------- |---------------------------------|
-  ;; sign > 0 |    n-date       | next(n-date)  |
-  ;;          +---------------------------------+
-  (let* ((n-event (mycal:--nth-event n))
-         (n-date (mycal:event-start-date n-event)))
-    (if (and (< sign 0)
-             (mycal:date-less-p date n-date))
-        (mycal:--nth-event-point (1- n))
-      (if (and (> sign 0)
-               (mycal:date-less-p n-date date))
-          (mycal:--nth-event-point (1+ n))
-        (mycal:--nth-event-point n)))))
 
 (defun mycal:--date2str (date)
   (apply 'format "(%d %d %d)" date))
 
-(defun mycal:--date-binary-search (date sign min max)
-  "do a binary search trying to find and event at DATE"
+(defun mycal:--genl-binary-search (compare-function min max &optional failure)
+  "general binary search routine: COMPARE-FUNCTION is used to
+search for a match between MIN and MAX, and returns in {<0, =0,
+>0} for 'less than', 'equal', and 'greater than', respectively.
+presumably COMPARE-FUNCTION has its comparand baked into it by
+the caller.  in the event of a failure, FAILURE is called with
+the terminal index"
   (let* ((mid (/ (+ min max) 2))
-         (event-mid (mycal:--nth-event mid))
-         (date-mid  (mycal:event-start-date event-mid)))
-    (if (equal date date-mid)
-        (mycal:--nth-event-point mid)
-      (if (mycal:date-less-p date date-mid)
-          (mycal:--date-binary-search date sign min mid)
-        (if (or (= min mid) (= mid max))
-            (mycal:--date-not-found date sign min)
-          (mycal:--date-binary-search date sign mid max))))))
-  
+         (comparison (apply compare-function (list mid))))
+    (if (= comparison 0)
+        mid
+      (if (or (= mid min) (= mid max))
+          (if failure
+              (apply failure (list mid))
+            (error "mycal:--genl-binary-search failed"))
+        (if (< comparison 0)
+            (mycal:--genl-binary-search compare-function min mid failure)
+          (mycal:--genl-binary-search compare-function mid max failure))))))
+
 (defun mycal:navi-goto-date (date sign)
   "go to an event on the given DATE.  if there is no event on
   DATE, go to first entry with a date later than DATE if SIGN is
   negative, otherwise the first event earlier than DATE"
   ;; do a binary search
-  (goto-char
-   (mycal:--date-binary-search date sign 0 (1- (length mycal:event-indices)))))
-    
+  (let ((index (mycal:--genl-binary-search
+                (lambda (try)                       ; COMPARISON routine for binary search
+                  (let* ((mid (/ (+ min max) 2))
+                         (event-mid (mycal:--nth-event mid))
+                         (date-mid  (mycal:event-start-date event-mid)))
+                    (message "comparison: %s %d %s" 
+                             (mycal:--date2str date) mid (mycal:--date2str date-mid))
+                    (if (equal date date-mid)
+                        0
+                      (if (mycal:date-less-p date date-mid)
+                          -1
+                        +1))))
+                0 (1- (length mycal:event-indices))
+                (lambda (n)                         ; FAILURE routine for binary search
+                  "unable to find an event at DATE, N is the
+closest we could get.  return the event whose date is on the SIGN
+side of DATE"
+                  
+                  ;;          |  date < n-date  | date > n-date |
+                  ;;          +---------------------------------+
+                  ;; sign < 0 |    prev(n-date) | n-date        |
+                  ;; -------- |---------------------------------|
+                  ;; sign > 0 |    n-date       | next(n-date)  |
+                  ;;          +---------------------------------+
+                  (let* ((n-event (mycal:--nth-event n))
+                         (n-date (mycal:event-start-date n-event)))
+                    (message "failure: %s %d %s %d" 
+                             (mycal:--date2str date) n (mycal:--date2str n-date) sign)
+                    (if (and (< sign 0)
+                             (mycal:date-less-p date n-date))
+                        (1- n)
+                      (if (and (> sign 0)
+                               (mycal:date-less-p n-date date))
+                           (1+ n)
+                        n)))))))
+    (message "index: %d" index)
+    (goto-char (mycal:--nth-event-point index))))
 
+;; with this, we take care of *most* of the date navigation commands
 (defmacro mycal:navi-macro (DIR UNIT)
   "expand to produce a mycal:navi-DIR-UNIT-command"
   (if (symbolp DIR)
@@ -241,7 +264,53 @@ get.  return the event whose date is on the SIGN side of DATE"
     `(defun ,command (&optional num)
           (interactive)
           (let ((event (get-text-property (point) 'mycal:event)))
-                (mycal:navi-goto-date-offset event ,offset ,sign)))))
+            (mycal:navi-goto-date-offset event ,offset ,sign)))))
+
+;; now, create all these functions in one swell fwoop
+(dolist (dir '(prev next))
+  (dolist (unit '(day week 2week month year))
+    (eval `(mycal:navi-macro ,dir ,unit))))
+
+
+(defun mycal:navi-today-command ()
+  "go to today's date (or the next earlier event"
+  (interactive)
+  (let ((dtime (decode-time)))
+    (mycal:navi-goto-date 
+     (list (nth 4 dtime) (nth 3 dtime) (nth 5 dtime)) -1)))
+
+(defun mycal:--get-event-index ()
+  "get the index in mycal:event-indices of the event at point"
+  ;; need to find an index with a value less than or equal to point
+  ;; such that the next *higher* index has a value greater than point
+  ;; brute force: for i in 0:max, do...
+
+  ;; a little bit like a Dedekind cut: first find one below, then find
+  ;; the smallest one larger
+  (let ((point (point)))
+    (mycal:--genl-binary-search
+     (lambda (try)
+       (let ((try-point (mycal:--nth-event-point try))
+             (next-point (mycal:--nth-event-point (1+ try))))
+         (if (> try-point point)
+             -1      ; try-point too big, look lower down
+           (if (> next-point point) ;try-point less than or equal
+               0 ; next point bigger than point -- got it!
+             +1)))) ; else, keep looking for a good upper
+     0 (1- (length mycal:event-indices)))))
+
+(defun mycal:navi-prev-event-command (&optional num)
+  "go to the previous event"
+  (interactive)
+  (let* ((index (mycal:--get-event-index)))
+    (goto-char (mycal:--nth-event-point (1- index)))))
+
+(defun mycal:navi-next-event-command (&optional num)
+  "to to the next event"
+  (interactive)
+  (let* ((index (mycal:--get-event-index)))
+    (goto-char (mycal:--nth-event-point (1+ index)))))
+    
 
 (defun mycal:navi-goto-date-offset (event offset multiple)
   "go to the date in EVENT plus/minus a MULTIPLE of
@@ -263,12 +332,6 @@ get.  return the event whose date is on the SIGN side of DATE"
     (mycal:navi-goto-date target sign)))
          
 
-;; now, create all these functions in one swell fwoop
-(dolist (dir '(prev next))
-  (dolist (unit '(day week 2week month year))
-    (eval `(mycal:navi-macro ,dir ,unit))))
-
-
 (defun mycal:dates-less-p (date1 date2)
   "returns true if DATE1 earlier than DATE2"
   (mycal:lexiless-p (mycal:lexi-date date1) (mycal:lexi-date date2)))
@@ -276,13 +339,12 @@ get.  return the event whose date is on the SIGN side of DATE"
 ;; from (cfw:ical-event-get-dates)
 (defun mycal:ical--get-date (event tag)
   "find a TAG in EVENT, and return date and time of it"
-  (let*
-      ((tval (icalendar--get-event-property event tag))
-       (tzone (icalendar--find-time-zone
-               (icalendar--get-event-property-attributes event tag) zone-map))
-       (tdecode (icalendar--decode-isodatetime tval nil tzone))
-       (tdate (cfw:decode-to-calendar tdecode))
-       (ttime (cfw:time (nth 2 tdecode) (nth 1 tdecode))))
+  (let* ((tval (icalendar--get-event-property event tag))
+         (tzone (icalendar--find-time-zone
+                 (icalendar--get-event-property-attributes event tag) zone-map))
+         (tdecode (icalendar--decode-isodatetime tval nil tzone))
+         (tdate (cfw:decode-to-calendar tdecode))
+         (ttime (cfw:time (nth 2 tdecode) (nth 1 tdecode))))
     (list tdate ttime)))
 
 ;; cribbed from calfw-ical.el
@@ -401,6 +463,7 @@ returns the new date."
          (sorted (sort (cdr unsorted) 'mycal:start-date-time-less-p)))
     ;; create a buffer
     (set-buffer (get-buffer-create "*mycal-event-list*"))
+    (setq-local buffer-read-only nil)
     (erase-buffer)
     (let ((mybuffer (current-buffer)))
       (with-current-buffer cfwbuffer
@@ -422,4 +485,7 @@ returns the new date."
           (setq mycal:event-indices (push (point) mycal:event-indices))
           (mycal:spit-event event counter))))
     (setq mycal:event-indices (reverse mycal:event-indices))
-    (setq buffer-read-only t)))
+    (setq buffer-read-only t)
+    (mycal:navi-today-command)
+    (narrow-to-region 1 (1- (point-max))))
+  nil)
