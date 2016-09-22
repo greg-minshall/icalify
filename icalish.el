@@ -143,7 +143,7 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
             (mycal:lexiless-p (cdr l1) (cdr l2)))))))
 
 (defun mycal:lexi-date (date)
-  (list (nth 2 date) (nth 1 date) (nth 0 date)))
+  (list (nth 2 date) (nth 0 date) (nth 1 date)))
 
 (defun mycal:date-less-p (d1 d2)
   (let ((date1 (mycal:lexi-date d1))
@@ -194,13 +194,19 @@ get.  return the event whose date is on the SIGN side of DATE"
         (mycal:--nth-event-index (1- n))
       (if (and (> sign 0)
                (mycal:date-less-p n-date date))
-          (mycal:--nth-event-index (1+ n))))))
-  
+          (mycal:--nth-event-index (1+ n))
+        (mycal:--nth-event-index n)))))
+
+(defun mycal:--date2str (date)
+  (apply 'format "(%d %d %d)" date))
+
 (defun mycal:--date-binary-search (date sign min max)
   "do a binary search trying to find and event at DATE"
   (let* ((mid (/ (+ min max) 2))
          (event-mid (mycal:--nth-event mid))
          (date-mid  (mycal:event-start-date event-mid)))
+    (message "binary-search %s %d %d %d %d %s"
+             (mycal:--date2str date) sign min mid max (mycal:--date2str date-mid))
     (if (equal date date-mid)
         (mycal:nth-event-index mid)
       (if (mycal:date-less-p date date-mid)
@@ -226,10 +232,10 @@ get.  return the event whose date is on the SIGN side of DATE"
       (setq UNIT (symbol-name UNIT)))
   (let ((command (intern (concat "mycal:navi-" DIR "-" UNIT "-command")))
         (offset (cond
-                 ((equal UNIT "day") '(list 1 0 0))
-                 ((equal UNIT "week") '(list 7 0 0))
-                 ((equal UNIT "2week") '(list 14 0 0))
-                 ((equal UNIT "month") '(list 0 1 0))
+                 ((equal UNIT "day") '(list 0 1 0))
+                 ((equal UNIT "week") '(list 0 7 0))
+                 ((equal UNIT "2week") '(list 0 14 0))
+                 ((equal UNIT "month") '(list 1 0 0))
                  ((equal UNIT "year") '(list 0 0 1))
                  (t (error "UNIT must be one of day, week, 2week, month, year"))))
         (sign (cond
