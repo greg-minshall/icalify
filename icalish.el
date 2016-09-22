@@ -159,23 +159,21 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
     (mycal:lexiless-p (append date1 time1)
                       (append date2 time2))))
 
-(defun mycal:--nth-event-index (nput)
+(defun mycal:--nth-event-point (nput)
   "return the N'th event"
   (let ((n (min (max nput 0) (1- (length mycal:event-indices)))))
     (if (= n 0)
         (error "no events in calendar!")
-      n)))
+      (nth n mycal:event-indices))))
 
 (defun mycal:--nth-event (nput)
   "return the N'th event"
-  (let ((n (mycal:--nth-event-index nput)))
-    (save-excursion
-      (let ((e-point (nth n mycal:event-indices)))
-        (goto-char e-point)
-        (let ((event (get-text-property (point) 'mycal:event)))
-          (if (null event)
-              (error "misplaced event")
-            event))))))
+  (save-excursion
+    (goto-char  (mycal:--nth-event-point nput))
+    (let ((event (get-text-property (point) 'mycal:event)))
+      (if (null event)
+          (error "misplaced event")
+        event))))
 
 (defun mycal:--date-not-found (date sign n)
   "unable to find an event at DATE, N is the closest we could
@@ -191,11 +189,11 @@ get.  return the event whose date is on the SIGN side of DATE"
          (n-date (mycal:event-start-date n-event)))
     (if (and (< sign 0)
              (mycal:date-less-p date n-date))
-        (mycal:--nth-event-index (1- n))
+        (mycal:--nth-event-point (1- n))
       (if (and (> sign 0)
                (mycal:date-less-p n-date date))
-          (mycal:--nth-event-index (1+ n))
-        (mycal:--nth-event-index n)))))
+          (mycal:--nth-event-point (1+ n))
+        (mycal:--nth-event-point n)))))
 
 (defun mycal:--date2str (date)
   (apply 'format "(%d %d %d)" date))
