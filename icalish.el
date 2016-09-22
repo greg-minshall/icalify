@@ -185,17 +185,21 @@ search for a match between MIN and MAX, and returns in {<0, =0,
 presumably COMPARE-FUNCTION has its comparand baked into it by
 the caller.  in the event of a failure, FAILURE is called with
 the terminal index"
-  (let* ((mid (/ (+ min max) 2))
-         (comparison (apply compare-function (list mid))))
-    (if (= comparison 0)
-        mid
-      (if (or (= mid min) (= mid max))
-          (if failure
-              (apply failure (list mid))
-            (error "mycal:--genl-binary-search failed"))
-        (if (< comparison 0)
-            (mycal:--genl-binary-search compare-function min mid failure)
-          (mycal:--genl-binary-search compare-function mid max failure))))))
+  (let ((mid (/ (+ min max) 2)))
+    (if (or (= mid min) (= mid max))
+        (if (= (apply compare-function (list min)) 0)
+            min
+          (if (= (apply compare-function (list max)) 0)
+              max
+            (if failure
+                (apply failure (list mid))
+              (error "mycal:--genl-binary-search failed"))))
+      (let ((comparison (apply compare-function (list mid))))
+        (if (= comparison 0)
+            mid
+          (if (< comparison 0)
+              (mycal:--genl-binary-search compare-function min mid failure)
+            (mycal:--genl-binary-search compare-function mid max failure)))))))
 
 (defun mycal:navi-goto-date (date sign)
   "go to an event on the given DATE.  if there is no event on
@@ -285,14 +289,16 @@ side of DATE"
 
   ;; a little bit like a Dedekind cut: first find one below, then find
   ;; the smallest one larger
-  (let ((point (point)))
+  (let ((point (point))
+        (max-index (1- (length mycal:event-indices))))
     (mycal:--genl-binary-search
      (lambda (try)
        (let ((try-point (mycal:--nth-event-point try))
              (next-point (mycal:--nth-event-point (1+ try))))
          (if (> try-point point)
              -1      ; try-point too big, look lower down
-           (if (> next-point point) ;try-point less than or equal
+           (if (or (> next-point point) ; try-point less than or equal
+                   (= try max-index))   ; or, we're at the end
                0 ; next point bigger than point -- got it!
              +1)))) ; else, keep looking for a good upper
      0 (1- (length mycal:event-indices)))))
