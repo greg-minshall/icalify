@@ -81,7 +81,7 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
   '(("e" . mycal:navi-prev-event-command)
     ("d" . mycal:navi-prev-day-command)
     ("w" . mycal:navi-prev-week-command)
-    ("2" . mycal:navi-prev-two-week-command)
+    ("2" . mycal:navi-prev-2week-command)
     ("m" . mycal:navi-prev-month-command)
     ("y" . mycal:navi-prev-year-command)))
 
@@ -89,7 +89,7 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
   '(("e" . mycal:navi-next-event-command)
     ("d" . mycal:navi-next-day-command)
     ("w" . mycal:navi-next-week-command)
-    ("2" . mycal:navi-next-two-week-command)
+    ("2" . mycal:navi-next-2week-command)
     ("m" . mycal:navi-next-month-command)
     ("y" . mycal:navi-next-year-command)))
 
@@ -191,7 +191,7 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
   available date furtheset from the current date (will also
   depend on sign of MULTIPLE)."
   (let* ((curdate (mycal:event-start-date event))
-         (total-offset (* offset multiple))
+         (total-offset (mapcar (lambda (a) (* offset a)) multiple))
          (target-decoded (icalendar--add-decoded-times
                           (list 0 0 0
                                 (nth 1 curdate) (nth 0 curdate) (nth 2 curdate))
