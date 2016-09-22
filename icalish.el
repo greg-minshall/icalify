@@ -163,9 +163,7 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
 (defun mycal:--nth-event-point (nput)
   "return the buffer position of the N'th event"
   (let ((n (min (max nput 0) (1- (length mycal:event-indices)))))
-    (if (= n 0)
-        (error "no events in calendar!")
-      (nth n mycal:event-indices))))
+    (nth n mycal:event-indices)))
 
 (defun mycal:--nth-event (nput)
   "return the N'th event"
