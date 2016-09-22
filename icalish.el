@@ -7,6 +7,9 @@
 ;; - search
 ;; - read-only
 ;; - search, narrow, widen, ?sort?
+;; - add description text as "invisible",
+;;   allow visibility cycling; retain visibility
+;;   when move to next event
 ;; - L in calfw to come back to list
 ;; - i want calfw to obey [np][edw2my]
 ;; - [be][edw2my] for "beginning", "end"
@@ -142,6 +145,11 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
 (defun mycal:lexi-date (date)
   (list (nth 2 date) (nth 1 date) (nth 0 date)))
 
+(defun mycal:date-less-p (d1 d2)
+  (let ((date1 (mycal:lexi-date d1))
+        (date2 (mycal:lexi-date d2)))
+    (mycal:lexiless-p date1 date2)))
+
 (defun mycal:start-date-time-less-p (ev1 ev2)
   "does EV1 start before (or at same time) as EV2?"
   (let ((date1 (mycal:lexi-date (mycal:event-start-date ev1)))
@@ -151,15 +159,58 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
     (mycal:lexiless-p (append date1 time1)
                       (append date2 time2))))
 
-(defun mycal:goto-date (date &optional back)
-  "go to an event on the given DATE.  if there is no event on
-  DATE, and BACK is non-nil, go to the first event earlier than
-  DATE, otherwise the first event later than DATE."
-  )
+(defun mycal:--nth-event (nput)
+  "return the N'th event"
+  (let ((n (min (max nput 0) (1- (length mycal:event-indices)))))
+    (if (= n 0)
+        (error "no events in calendar!")
+      (save-excursion
+        (let ((e-point (nth n mycal:event-indices)))
+          (goto-char e-point)
+          (let ((event (get-text-property (point) 'mycal:event)))
+            (if (null event)
+                (error "misplaced event")
+              event)))))))
+          
 
-(defun mycal:navi-prev-event-command ()
-  (interactive)
-  (debug))
+(defun mycal:--date-not-found (date sign n)
+  "unable to find an event at DATE, N is the closest we could
+get.  return the event whose date is on the SIGN side of DATE"
+
+  ;;          |  date < n-date  | date > n-date |
+  ;;          +---------------------------------+
+  ;; sign < 0 |    prev(n-date) | n-date        |
+  ;; -------- |---------------------------------|
+  ;; sign > 0 |    n-date       | next(n-date)  |
+  ;;          +---------------------------------+
+  (let* ((n-event (mycal:--nth-event n))
+         (n-date (mycal:event-start-date n-event)))
+    (if (and (< sign 0)
+             (mycal:date-less-p date n-date))
+        (mycal:--nth-event (1- n))
+      (if (and (> sign 0)
+               (mycal:date-less-p n-date date))
+          (mycal:--nth-event (1+ n))))))
+  
+(defun mycal:--date-binary-search (date sign min max)
+  "do a binary search trying to find and event at DATE"
+  (if (= min max)           ; if we failed...
+      (mycal:--date-not-found date sign min)
+    (let* ((mid (/ (+ min max) 2))
+           (event-mid (mycal:--nth-event mid))
+           (date-mid  (mycal:event-start-date event-mid)))
+      (if (equal date date-mid)
+          event-mid
+        (if (mycal:date-less-p date date-mid)
+          (mycal:--date-binary-search date sign min mid)
+        (mycal:--date-binary-search date sign mid max))))))
+  
+(defun mycal:navi-goto-date (date sign)
+  "go to an event on the given DATE.  if there is no event on
+  DATE, go to first entry with a date later than DATE if SIGN is
+  negative, otherwise the first event earlier than DATE"
+  ;; do a binary search
+  (mycal:--date-binary-search date sign 0 (1- (length mycal:event-indices))))
 
 (defmacro mycal:navi-macro (DIR UNIT)
   "expand to produce a mycal:navi-DIR-UNIT-command"
@@ -191,7 +242,8 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
   available date furtheset from the current date (will also
   depend on sign of MULTIPLE)."
   (let* ((curdate (mycal:event-start-date event))
-         (total-offset (mapcar (lambda (a) (* offset a)) multiple))
+         (total-offset (mapcar (lambda (a) (* multiple a)) offset))
+         (sign (if (< multiple 0) -1 1))
          (target-decoded (icalendar--add-decoded-times
                           (list 0 0 0
                                 (nth 1 curdate) (nth 0 curdate) (nth 2 curdate))
@@ -200,7 +252,7 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
          (target (list (nth 4 target-decoded)
                        (nth 3 target-decoded)
                        (nth 5 target-decoded))))
-    (mycal:navi-goto-date target)))
+    (mycal:navi-goto-date target sign)))
          
 
 ;; now, create all these functions in one swell fwoop
@@ -346,6 +398,7 @@ returns the new date."
       (with-current-buffer cfwbuffer
         (setq-local mycal:mycalbuffer mybuffer)))
     (setq-local mycal:cfwbuffer cfwbuffer)
+    (setq-local mycal:event-indices '())
     (mycal:install-keymap)
     ;; (setq buffer-read-only t)
     (let ((cur-date nil)
@@ -358,4 +411,5 @@ returns the new date."
           ;; that out
           (if (mycal:dates-less-p cur-date evdate)
               (setq cur-date (mycal:spit-date event)))
+          (setq mycal:event-indices (append mycal:event-indices (list (point))))
           (mycal:spit-event event counter))))))
