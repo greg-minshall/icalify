@@ -96,15 +96,26 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
     ("m" . mycal:navi-next-month-command)
     ("y" . mycal:navi-next-year-command)))
 
+(defconst mycal:keymap-ctrlx
+  '(("]" . mycal:navi-next-year-command)
+    ("[" . mycal:navi-prev-year-command)))
+
 (defconst mycal:keymap
   (mycal:define-keymap
-   '(("M" . mycal:open-calfw)
+   '(("C-b" . mycal:navi-prev-day-command)
+     ("C-f" . mycal:navi-next-day-command)
+     ("M" . mycal:open-calfw)
      ("n" . (mycal:define-keymap mycal:keymap-next))
+     ("C-n" . mycal:navi-next-week-command)
      ("p" . (mycal:define-keymap mycal:keymap-prev))
+     ("C-p" . mycal:navi-prev-week-command)
+     ("q" . bury-buffer)
+     ("t" . mycal:navi-today-command)
+     ("C-x" . (mycal:define-keymap mycal:keymap-ctrlx))
      ("<RET>" . mycal:open-event)
      ("<down-mouse-1>" . mycal:open-event)
-     ("q" . bury-buffer)
-     ("t" . mycal:navi-today-command)))
+     ("M-}" . mycal:navi-next-month-command)
+     ("M-{" . mycal:navi-prev-month-command)))
   "keymap for mycal event list")
 
    
