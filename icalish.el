@@ -3,7 +3,7 @@
 (require 'icalendar)
 
 ;; TODO
-;; - next event, day, etc.
+;; - calfw and/or emacs calendar keybindings
 ;; - search
 ;; - read-only
 ;; - search, narrow, widen, ?sort?
@@ -12,7 +12,7 @@
 ;;   when move to next event
 ;; - L in calfw to come back to list
 ;; - i want calfw to obey [np][edw2my]
-;; - [be][edw2my] for "beginning", "end"
+;; - [be][edw2my] for "beginning", "end" (of week, month, etc.)
 ;; - recurring
 ;; - use calfw formats for dates, times
 ;; - multiple calendars -- enable, disable
@@ -211,8 +211,6 @@ the terminal index"
                   (let* ((mid (/ (+ min max) 2))
                          (event-mid (mycal:--nth-event mid))
                          (date-mid  (mycal:event-start-date event-mid)))
-                    (message "comparison: %s %d %s" 
-                             (mycal:--date2str date) mid (mycal:--date2str date-mid))
                     (if (equal date date-mid)
                         0
                       (if (mycal:date-less-p date date-mid)
@@ -232,8 +230,6 @@ side of DATE"
                   ;;          +---------------------------------+
                   (let* ((n-event (mycal:--nth-event n))
                          (n-date (mycal:event-start-date n-event)))
-                    (message "failure: %s %d %s %d" 
-                             (mycal:--date2str date) n (mycal:--date2str n-date) sign)
                     (if (and (< sign 0)
                              (mycal:date-less-p date n-date))
                         (1- n)
@@ -241,7 +237,6 @@ side of DATE"
                                (mycal:date-less-p n-date date))
                            (1+ n)
                         n)))))))
-    (message "index: %d" index)
     (goto-char (mycal:--nth-event-point index))))
 
 ;; with this, we take care of *most* of the date navigation commands
