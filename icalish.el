@@ -3,20 +3,19 @@
 (require 'icalendar)
 
 ;; TODO
-;; - calfw and/or emacs calendar keybindings
 ;; - numeric prefixes for motion commands
 ;; - goto-date-command
-;; - search
-;; - read-only
+;;   (calfw has code for customizing read date formats)
+;; - after viewing detail, come back to list
+;;   (if invoked from list)
 ;; - search, narrow, widen, ?sort?
 ;; - add description text as "invisible",
-;;   allow visibility cycling; retain visibility
-;;   when move to next event
+;;   allow visibility cycling for a single event
+;;   retain visibility when move to next event
 ;; - L in calfw to come back to list
 ;; - i want calfw to obey [np][edw2my]
 ;; - [be][edw2my] for "beginning", "end" (of week, month, etc.)
 ;; - recurring
-;; - use calfw formats for dates, times
 ;; - multiple calendars -- enable, disable
 ;; - CALDAV!!!
 ;; - when CALDAV, updates
@@ -187,10 +186,6 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
       (if (null event)
           (error "misplaced event")
         event))))
-
-
-(defun mycal:--date2str (date)
-  (apply 'format "(%d %d %d)" date))
 
 (defun mycal:--genl-binary-search (compare-function min max &optional failure)
   "general binary search routine: COMPARE-FUNCTION is used to
@@ -412,14 +407,6 @@ side of DATE"
       (push data mycal:ical-data-cache))
     (cdr data)))
 
-(defun mycal:format-time (time)
-  "return a string reprenting a given time of day"
-  (let ((hh (nth 0 time))
-        (mm (nth 1 time)))
-    (if (not hh)
-        "all day"
-      (format "%02d:%02d" hh mm))))
-
 (defun mycal:onelineize (text)
   (if (not text)
       ""
@@ -431,33 +418,30 @@ side of DATE"
 returns the new date."
   (let ((evdate (mycal:event-start-date event))
         (start (point)))
-  (insert (format "%02d.%02d.%02d\n"
-                  (nth 0 evdate) (nth 1 evdate) (nth 2 evdate)))
-  (let ((end (1- (point))))
-    (add-face-text-property start end '(:background "gray90")))
-  evdate))
+    (insert (cfw:event-format event "%S"))
+    (insert "\n")
+    (let ((end (1- (point))))
+      (add-face-text-property start end '(:background "gray90")))
+    evdate))
 
 (defun mycal:spit-event (event counter)
   "insert an event entry into the buffer."
-  (let ((evtime (mycal:format-time (mycal:event-start-time event)))
-        (evsummary (mycal:onelineize (mycal:event-title event)))
-        (evlocation (mycal:event-location event))
+  (let ((evlocation (mycal:event-location event))
         (evdescription (mycal:event-description event))
         (start (point))
         (evcopy (copy-mycal:event event)))
-    ;; if current date not same as that of this event, write
-    ;; that out
-    (insert (format "%s:" evtime))
+    (insert (cfw:event-format event "%s"))
     (if evdescription
         (insert "+ ")
       (insert "  "))
     (let ((col (current-column)))
-      (insert (format "%s" evsummary))
+      (insert (cfw:event-format event "%t"))
       (if evlocation
           (progn
             (move-to-column 80 t)
             (insert "\n")
             (move-to-column col t)
+            ;; cfw:event-format doesn't do a good job for my location
             (insert (format "%s" (mycal:onelineize evlocation))))))
     (move-to-column 80 t)
     (insert "\n")
@@ -489,8 +473,7 @@ returns the new date."
           (counter 0))
       (dolist (event sorted)
         (setq counter (1+ counter))
-        (let ((evdate (mycal:event-start-date event))
-              (evtime (mycal:format-time (mycal:event-start-time event))))
+        (let ((evdate (mycal:event-start-date event)))
           ;; if current date not same as that of this event, write
           ;; that out
           (if (mycal:dates-less-p cur-date evdate)
