@@ -24,6 +24,33 @@ opening an entry).
 
 ** adding/modifying an entry
 
+** things about calfw
+*** navigating
+
+maybe hijack 'n' and 'p' for two letter navigation: nd, pd, nw, pw,
+nm, pm, ny, py (d==day, w==week, m==month, y==year)
+
+similarly, maybe 'v' for view: d, w, 2, m, y (where 2==2 weeks).
+maybe "y" isn't feasible (not offered in calfw
+*** expressiveness
+
+calfw doesn't have all the fields one would like with .ics:
+#+BEGIN_EXAMPLE
+;; This structure defines calendar events.
+(defstruct cfw:event
+  title       ; event title [string]
+  start-date  ; start date of the event [cfw:date]
+  start-time  ; start time of the event (optional)
+  end-date    ; end date of the event [cfw:date] (optional)
+  end-time    ; end of the event (optional)
+  description ; event description [string] (optional)
+  location    ; location [strting] (optional)
+  source      ; [internal] source of the event
+  )
+#+END_EXAMPLE
+
+(though, at the moment, that seems like not such a big deal.)
+
 ** "previous work"
 
 okay.  how do i deal with these?  [[https://github.com/geier?tab=repositories][here's a guy]] likely looking tools.
@@ -61,4 +88,108 @@ the goobook (above) interface, but talking to a downloaded vcard
 database, might be nice.
 
 according to [[https://www.emacswiki.org/emacs/BbdbExportImportSync][this emacs wiki page]], [[http://asynk.io/][ASynK]]
+
+
+
+** playing around
+
+*** tags in my .ics file
+
+#+BEGIN_SRC sh :results verbatim
+(sep=""; for i in `grep -v "^ " test.ics | sed 's/:.*$//' | sed 's/;.*$//' | words`; do echo -n "$sep$i"; sep=" "; done; echo) | fold -s
+#+END_SRC
+
+#+RESULTS:
+: acknowledged action attach attendee begin calscale class created description 
+: dtend dtstamp dtstart end exdate geo last-modified location method organizer 
+: priority prodid rdate recurrence-id related-to rrule sequence status summary 
+: transp trigger tzid tzname tzoffsetfrom tzoffsetto uid url version 
+: x-apple-calendar-color x-apple-default-alarm x-apple-structured-location 
+: x-apple-travel-advisory-behavior x-apple-travel-start x-wr-alarmuid 
+: x-wr-calname x-wr-timezone
+
+which ones shall we care about?
+- created
+- description
+- dtend
+- dtstamp
+- dtstart
+- ?exdate?
+- geo
+- last-modified
+- location
+- ?recurrence-id?
+- rrule
+- ?sequence?
+- summary
+- url
+*** emacs searching
+
+#+BEGIN_SRC emacs-lisp :results output verbatim
+  (let ((trial-space-reg '(
+                           "[ \t]+"
+                           "[ \t]+\\|\t+"
+                           "[ \t\n]+\\|\t+\\|\n+"
+                           ))
+        (trial-patterns '("thisis"
+                          "this is"
+                          "this\tis"
+                          "this	is"
+                          "this\nis"
+                          "this
+is")))
+    (princ "\n")
+    (dolist (re trial-space-reg)
+      (dolist (pat trial-patterns)
+        (let ((result (string-match re pat)))
+          (princ re)
+          (princ " : ")
+          (princ pat)
+          (princ " : ")
+          (princ result)
+          (princ "\n")))))
+
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+"
+[ 	]+ : thisis : nil
+[ 	]+ : this is : 4
+[ 	]+ : this	is : 4
+[ 	]+ : this	is : 4
+[ 	]+ : this
+is : nil
+[ 	]+ : this
+is : nil
+[ 	]+\\|	+ : thisis : nil
+[ 	]+\\|	+ : this is : 4
+[ 	]+\\|	+ : this	is : 4
+[ 	]+\\|	+ : this	is : 4
+[ 	]+\\|	+ : this
+is : nil
+[ 	]+\\|	+ : this
+is : nil
+[ 	
+]+\\|	+\\|
++ : thisis : nil
+[ 	
+]+\\|	+\\|
++ : this is : 4
+[ 	
+]+\\|	+\\|
++ : this	is : 4
+[ 	
+]+\\|	+\\|
++ : this	is : 4
+[ 	
+]+\\|	+\\|
++ : this
+is : 4
+[ 	
+]+\\|	+\\|
++ : this
+is : 4
+"
+#+end_example
 
