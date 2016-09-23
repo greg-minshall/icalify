@@ -4,14 +4,24 @@
 
 ;; TODO
 ;; - numeric prefixes for motion commands
+;; - help-echo as a function, returning description
+;;   (to, hopefully, reduce storage we are taking)
 ;; - goto-date-command
 ;;   (calfw has code for customizing read date formats)
 ;; - after viewing detail, come back to list
 ;;   (if invoked from list)
 ;; - search, narrow, widen, ?sort?
-;; - add description text as "invisible",
+;; - sadly, the following doesn't work:
+;;   (at least, not with 'invisible property;
+;;   ----
+;;   possibly it would with non-scalable overlays)
+;;   add description text as "invisible",
 ;;   allow visibility cycling for a single event
 ;;   retain visibility when move to next event
+;;   ----
+;;   maybe, if for Search, we keep a shadow buffer of
+;;   entire contents, take over C-s, C-r, and do on
+;;   shadow buffer.
 ;; - L in calfw to come back to list
 ;; - i want calfw to obey [np][edw2my]
 ;; - [be][edw2my] for "beginning", "end" (of week, month, etc.)
@@ -105,6 +115,7 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
   (mycal:define-keymap
    '(("C-b" . mycal:navi-prev-day-command) ; XXX prev-event more natural??
      ("C-f" . mycal:navi-next-day-command) ; XXX next-event more natural?
+     ("m" . mycal:open-calfw)
      ("M" . mycal:open-calfw)
      ("n" . (mycal:define-keymap mycal:keymap-next))
      ("C-n" . mycal:navi-next-week-command) ; XXX
@@ -446,7 +457,7 @@ returns the new date."
     (move-to-column 80 t)
     (insert "\n")
     (let ((end (1- (point)))
-          (color (if (= (% counter 2) 0) "gray70" "gray80")))
+          (color (if (= (% counter 2) 0) "gray70" "gray80"))) ; XXX customize
       ;; XXX really need fixed width buffer, fill rectangles
       (add-face-text-property start end (list ':background color))
       (add-text-properties start end (list 'mycal:event evcopy))
@@ -456,9 +467,12 @@ returns the new date."
            (list 'mouse-face 'highlight 'help-echo evdescription))))))
 
 (defun mycal:open-ical-calendar (url &optional cfwbuffer)
+  (message "calling mycal:ical-get-data")
   (let* ((unsorted (copy-sequence (mycal:ical-get-data url)))
+         (foo (message "calling sort"))
          (sorted (sort (cdr unsorted) 'mycal:start-date-time-less-p)))
     ;; create a buffer
+    (message "buffer overhead")
     (set-buffer (get-buffer-create "*mycal-event-list*"))
     (setq-local buffer-read-only nil)
     (erase-buffer)
@@ -471,6 +485,7 @@ returns the new date."
     ;; (setq buffer-read-only t)
     (let ((cur-date nil)
           (counter 0))
+      (message "starting dolist")
       (dolist (event sorted)
         (setq counter (1+ counter))
         (let ((evdate (mycal:event-start-date event)))
@@ -480,6 +495,7 @@ returns the new date."
               (setq cur-date (mycal:spit-date event)))
           (setq mycal:event-indices (push (point) mycal:event-indices))
           (mycal:spit-event event counter))))
+    (message "done with dolist")
     (setq mycal:event-indices (reverse mycal:event-indices))
     (setq buffer-read-only t)
     (mycal:navi-today-command)
