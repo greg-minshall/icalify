@@ -4,6 +4,8 @@
 
 ;; TODO
 ;; - calfw and/or emacs calendar keybindings
+;; - numeric prefixes for motion commands
+;; - goto-date-command
 ;; - search
 ;; - read-only
 ;; - search, narrow, widen, ?sort?
@@ -102,18 +104,19 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
 
 (defconst mycal:keymap
   (mycal:define-keymap
-   '(("C-b" . mycal:navi-prev-day-command)
-     ("C-f" . mycal:navi-next-day-command)
+   '(("C-b" . mycal:navi-prev-day-command) ; XXX prev-event more natural??
+     ("C-f" . mycal:navi-next-day-command) ; XXX next-event more natural?
      ("M" . mycal:open-calfw)
      ("n" . (mycal:define-keymap mycal:keymap-next))
-     ("C-n" . mycal:navi-next-week-command)
+     ("C-n" . mycal:navi-next-week-command) ; XXX
      ("p" . (mycal:define-keymap mycal:keymap-prev))
-     ("C-p" . mycal:navi-prev-week-command)
+     ("C-p" . mycal:navi-prev-week-command) ; XXX
      ("q" . bury-buffer)
      ("t" . mycal:navi-today-command)
      ("C-x" . (mycal:define-keymap mycal:keymap-ctrlx))
+     ("." . mycal:navi-today-command)
      ("<RET>" . mycal:open-event)
-     ("<down-mouse-1>" . mycal:open-event)
+     ("<SPC>" . mycal:open-event)
      ("M-}" . mycal:navi-next-month-command)
      ("M-{" . mycal:navi-prev-month-command)))
   "keymap for mycal event list")
