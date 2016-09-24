@@ -126,29 +126,44 @@ which ones shall we care about?
 *** emacs searching
 
 #+BEGIN_SRC emacs-lisp :results output verbatim
-  (let ((trial-space-reg '(
-                           "[ \t]+"
-                           "[ \t]+\\|\t+"
-                           "[ \t\n]+\\|\t+\\|\n+"
-                           ))
-        (trial-patterns '("thisis"
-                          "this is"
-                          "this\tis"
-                          "this	is"
-                          "this\nis"
-                          "this
-is")))
-    (princ "\n")
-    (dolist (re trial-space-reg)
-      (dolist (pat trial-patterns)
-        (let ((result (string-match re pat)))
-          (princ re)
-          (princ " : ")
-          (princ pat)
-          (princ " : ")
-          (princ result)
-          (princ "\n")))))
+  (defun results (re path result)
+  ;;          (princ re)
+  ;;          (princ " : ")
+  ;;          (princ pat)
+  ;;          (princ " : ")
+  ;;          (princ result)
+  ;;          (princ "\n"))
+)
 
+  (let ((trial-space-reg '(
+                             "[ \t]+"
+                             "[ \t]+\\|\t+"
+                             "[ \t\n]+\\|\t+\\|\n+"
+                             ))
+          (trial-patterns '("thisis"
+                            "this is"
+                            "this\tis"
+                            "this	is"
+                            "this\nis"
+                            "this
+  is")))
+      (princ "\n")
+      (dolist (re trial-space-reg)
+        (dolist (pat trial-patterns)
+          (let ((result (string-match re pat)))
+            (results re pat result))))
+
+      (princ "\n\n")
+      (dolist (re trial-space-reg)
+        (dolist (pat trial-patterns)
+          (with-output-to-temp-buffer "ggm-temp-buffer"
+            (erase-buffer)
+            (insert "\n")                 ; to have something to search past
+            (insert pat)
+            (goto-char (point-min))
+            (let ((result (re-search-forward re nil t)))
+              ;; (results re pat result)
+              )))))
 #+END_SRC
 
 #+RESULTS:
