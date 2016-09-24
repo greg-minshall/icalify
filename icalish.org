@@ -132,18 +132,17 @@ which ones shall we care about?
       (if (not (eq (null result) (null expected)))
           (progn
             (princ method)
-            (prin1 " : ")
-            (prin1 re)
-            (princ " : ")
-            (prin1 pat)
-            (princ " : ")
+            (princ " : <")
+            (princ re)
+            (princ "> : <")
+            (princ pat)
+            (princ "> : ")
             (princ result)
             (princ "\n")))))
 
   (let ((trial-space-reg '(
-                           "[ \t]+"
-                           "[ \t]+\\|\t+"
                            "[ \t\n]+\\|\t+\\|\n+"
+                           "[ \t\n]+\\|\t+\\|\n+\\|\\(\\\\t\\)+\\|\\(\\\\n\\)+"
                            ))
         (trial-patterns '(("thisis" nil)
                           ("this is" t)
@@ -166,7 +165,6 @@ which ones shall we care about?
           (dolist (pat trial-patterns)
             (with-current-buffer (get-buffer-create "ggm-temp-buffer")
               (erase-buffer)
-              (insert "\n")                 ; to have something to search past
               (insert (car pat))
               (goto-char (point-min))
               (let ((result (re-search-forward re nil t)))
@@ -177,40 +175,19 @@ which ones shall we care about?
 #+RESULTS:
 #+begin_example
 "
-string-match\" : \"\"[ 	]+\" : \"this
-is\" : nil
-string-match\" : \"\"[ 	]+\" : \"this
-is\" : nil
-string-match\" : \"\"[ 	]+\" : \"this\\\\tis\" : nil
-string-match\" : \"\"[ 	]+\" : \"this\\\\nis\" : nil
-string-match\" : \"\"[ 	]+\\\\|	+\" : \"this
-is\" : nil
-string-match\" : \"\"[ 	]+\\\\|	+\" : \"this
-is\" : nil
-string-match\" : \"\"[ 	]+\\\\|	+\" : \"this\\\\tis\" : nil
-string-match\" : \"\"[ 	]+\\\\|	+\" : \"this\\\\nis\" : nil
-string-match\" : \"\"[ 	
-]+\\\\|	+\\\\|
-+\" : \"this\\\\tis\" : nil
-string-match\" : \"\"[ 	
-]+\\\\|	+\\\\|
-+\" : \"this\\\\nis\" : nil
+string-match : <[ 	
+]+\\|	+\\|
++> : <this\\tis> : nil
+string-match : <[ 	
+]+\\|	+\\|
++> : <this\\nis> : nil
 
 
-re-search-forward\" : \"\"[ 	]+\" : \"this
-is\" : nil
-re-search-forward\" : \"\"[ 	]+\" : \"this
-is\" : nil
-re-search-forward\" : \"\"[ 	]+\" : \"this\\\\tis\" : nil
-re-search-forward\" : \"\"[ 	]+\" : \"this\\\\nis\" : nil
-re-search-forward\" : \"\"[ 	]+\\\\|	+\" : \"this
-is\" : nil
-re-search-forward\" : \"\"[ 	]+\\\\|	+\" : \"this
-is\" : nil
-re-search-forward\" : \"\"[ 	]+\\\\|	+\" : \"this\\\\tis\" : nil
-re-search-forward\" : \"\"[ 	]+\\\\|	+\" : \"this\\\\nis\" : nil
-re-search-forward\" : \"\"[ 	
-]+\\\\|	+\\\\|
-+\" : \"thisis\" : 2
+re-search-forward : <[ 	
+]+\\|	+\\|
++> : <this\\tis> : nil
+re-search-forward : <[ 	
+]+\\|	+\\|
++> : <this\\nis> : nil
 "
 #+end_example
