@@ -126,122 +126,91 @@ which ones shall we care about?
 *** emacs searching
 
 #+BEGIN_SRC emacs-lisp :results output verbatim
-  (defun results (re path result)
+  (defun results (method re item result)
+    (let ((pat (car item))
+          (expected (cadr item)))
+      (if (not (eq (null result) (null expected)))
+          (progn
+            (princ method)
+            (prin1 " : ")
             (prin1 re)
             (princ " : ")
             (prin1 pat)
             (princ " : ")
             (princ result)
-            (princ "\n"))
+            (princ "\n")))))
 
   (let ((trial-space-reg '(
-                             "[ \t]+"
-                             "[ \t]+\\|\t+"
-                             "[ \t\n]+\\|\t+\\|\n+"
-                             ))
-          (trial-patterns '("thisis"
-                            "this is"
-                            "this\tis"
-                            "this	is"
-                            "this\nis"
-                            "this
-  is")))
-      (princ "\n")
-      (dolist (re trial-space-reg)
-        (dolist (pat trial-patterns)
-          (let ((result (string-match re pat)))
-            (results re pat result))))
+                           "[ \t]+"
+                           "[ \t]+\\|\t+"
+                           "[ \t\n]+\\|\t+\\|\n+"
+                           ))
+        (trial-patterns '(("thisis" nil)
+                          ("this is" t)
+                          ("this\tis" t)
+                          ("this	is" t)
+                          ("this\nis" t)
+                          ("this
+  is" t)
+                          ("this\\tis" t)
+                          ("this\\nis" t))))
+        (princ "\n")
+        (dolist (re trial-space-reg)
+          (dolist (pat trial-patterns)
+            (let ((result (string-match re (car pat))))
+              (if (not (eq result (cadr pat)))
+                  (results "string-match" re pat result)))))
 
-      (princ "\n\n")
-      (dolist (re trial-space-reg)
-        (dolist (pat trial-patterns)
-          (with-current-buffer (get-buffer-create "ggm-temp-buffer")
-            (erase-buffer)
-            (insert "\n")                 ; to have something to search past
-            (insert pat)
-            (goto-char (point-min))
-            (let ((result (re-search-forward re nil t)))
-              (results re pat result)
-              )))))
+        (princ "\n\n")
+        (dolist (re trial-space-reg)
+          (dolist (pat trial-patterns)
+            (with-current-buffer (get-buffer-create "ggm-temp-buffer")
+              (erase-buffer)
+              (insert "\n")                 ; to have something to search past
+              (insert (car pat))
+              (goto-char (point-min))
+              (let ((result (re-search-forward re nil t)))
+                (if (not (eq result (cadr pat)))
+                    (results "re-search-forward" re pat result)))))))
 #+END_SRC
 
 #+RESULTS:
 #+begin_example
 "
-\"[ 	]+\" : \"thisis\" : nil
-\"[ 	]+\" : \"this is\" : 4
-\"[ 	]+\" : \"this	is\" : 4
-\"[ 	]+\" : \"this	is\" : 4
-\"[ 	]+\" : \"this
+string-match\" : \"\"[ 	]+\" : \"this
 is\" : nil
-\"[ 	]+\" : \"this
+string-match\" : \"\"[ 	]+\" : \"this
 is\" : nil
-\"[ 	]+\\\\|	+\" : \"thisis\" : nil
-\"[ 	]+\\\\|	+\" : \"this is\" : 4
-\"[ 	]+\\\\|	+\" : \"this	is\" : 4
-\"[ 	]+\\\\|	+\" : \"this	is\" : 4
-\"[ 	]+\\\\|	+\" : \"this
+string-match\" : \"\"[ 	]+\" : \"this\\\\tis\" : nil
+string-match\" : \"\"[ 	]+\" : \"this\\\\nis\" : nil
+string-match\" : \"\"[ 	]+\\\\|	+\" : \"this
 is\" : nil
-\"[ 	]+\\\\|	+\" : \"this
+string-match\" : \"\"[ 	]+\\\\|	+\" : \"this
 is\" : nil
-\"[ 	
+string-match\" : \"\"[ 	]+\\\\|	+\" : \"this\\\\tis\" : nil
+string-match\" : \"\"[ 	]+\\\\|	+\" : \"this\\\\nis\" : nil
+string-match\" : \"\"[ 	
 ]+\\\\|	+\\\\|
-+\" : \"thisis\" : nil
-\"[ 	
++\" : \"this\\\\tis\" : nil
+string-match\" : \"\"[ 	
 ]+\\\\|	+\\\\|
-+\" : \"this is\" : 4
-\"[ 	
-]+\\\\|	+\\\\|
-+\" : \"this	is\" : 4
-\"[ 	
-]+\\\\|	+\\\\|
-+\" : \"this	is\" : 4
-\"[ 	
-]+\\\\|	+\\\\|
-+\" : \"this
-is\" : 4
-\"[ 	
-]+\\\\|	+\\\\|
-+\" : \"this
-is\" : 4
++\" : \"this\\\\nis\" : nil
 
 
-\"[ 	]+\" : \"thisis\" : nil
-\"[ 	]+\" : \"this is\" : 7
-\"[ 	]+\" : \"this	is\" : 7
-\"[ 	]+\" : \"this	is\" : 7
-\"[ 	]+\" : \"this
+re-search-forward\" : \"\"[ 	]+\" : \"this
 is\" : nil
-\"[ 	]+\" : \"this
+re-search-forward\" : \"\"[ 	]+\" : \"this
 is\" : nil
-\"[ 	]+\\\\|	+\" : \"thisis\" : nil
-\"[ 	]+\\\\|	+\" : \"this is\" : 7
-\"[ 	]+\\\\|	+\" : \"this	is\" : 7
-\"[ 	]+\\\\|	+\" : \"this	is\" : 7
-\"[ 	]+\\\\|	+\" : \"this
+re-search-forward\" : \"\"[ 	]+\" : \"this\\\\tis\" : nil
+re-search-forward\" : \"\"[ 	]+\" : \"this\\\\nis\" : nil
+re-search-forward\" : \"\"[ 	]+\\\\|	+\" : \"this
 is\" : nil
-\"[ 	]+\\\\|	+\" : \"this
+re-search-forward\" : \"\"[ 	]+\\\\|	+\" : \"this
 is\" : nil
-\"[ 	
+re-search-forward\" : \"\"[ 	]+\\\\|	+\" : \"this\\\\tis\" : nil
+re-search-forward\" : \"\"[ 	]+\\\\|	+\" : \"this\\\\nis\" : nil
+re-search-forward\" : \"\"[ 	
 ]+\\\\|	+\\\\|
 +\" : \"thisis\" : 2
-\"[ 	
-]+\\\\|	+\\\\|
-+\" : \"this is\" : 2
-\"[ 	
-]+\\\\|	+\\\\|
-+\" : \"this	is\" : 2
-\"[ 	
-]+\\\\|	+\\\\|
-+\" : \"this	is\" : 2
-\"[ 	
-]+\\\\|	+\\\\|
-+\" : \"this
-is\" : 2
-\"[ 	
-]+\\\\|	+\\\\|
-+\" : \"this
-is\" : 2
 "
 #+end_example
-
