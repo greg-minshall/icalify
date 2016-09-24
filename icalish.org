@@ -127,13 +127,12 @@ which ones shall we care about?
 
 #+BEGIN_SRC emacs-lisp :results output verbatim
   (defun results (re path result)
-  ;;          (princ re)
-  ;;          (princ " : ")
-  ;;          (princ pat)
-  ;;          (princ " : ")
-  ;;          (princ result)
-  ;;          (princ "\n"))
-)
+            (prin1 re)
+            (princ " : ")
+            (prin1 pat)
+            (princ " : ")
+            (princ result)
+            (princ "\n"))
 
   (let ((trial-space-reg '(
                              "[ \t]+"
@@ -156,55 +155,93 @@ which ones shall we care about?
       (princ "\n\n")
       (dolist (re trial-space-reg)
         (dolist (pat trial-patterns)
-          (with-output-to-temp-buffer "ggm-temp-buffer"
+          (with-current-buffer (get-buffer-create "ggm-temp-buffer")
             (erase-buffer)
             (insert "\n")                 ; to have something to search past
             (insert pat)
             (goto-char (point-min))
             (let ((result (re-search-forward re nil t)))
-              ;; (results re pat result)
+              (results re pat result)
               )))))
 #+END_SRC
 
 #+RESULTS:
 #+begin_example
 "
-[ 	]+ : thisis : nil
-[ 	]+ : this is : 4
-[ 	]+ : this	is : 4
-[ 	]+ : this	is : 4
-[ 	]+ : this
-is : nil
-[ 	]+ : this
-is : nil
-[ 	]+\\|	+ : thisis : nil
-[ 	]+\\|	+ : this is : 4
-[ 	]+\\|	+ : this	is : 4
-[ 	]+\\|	+ : this	is : 4
-[ 	]+\\|	+ : this
-is : nil
-[ 	]+\\|	+ : this
-is : nil
-[ 	
-]+\\|	+\\|
-+ : thisis : nil
-[ 	
-]+\\|	+\\|
-+ : this is : 4
-[ 	
-]+\\|	+\\|
-+ : this	is : 4
-[ 	
-]+\\|	+\\|
-+ : this	is : 4
-[ 	
-]+\\|	+\\|
-+ : this
-is : 4
-[ 	
-]+\\|	+\\|
-+ : this
-is : 4
+\"[ 	]+\" : \"thisis\" : nil
+\"[ 	]+\" : \"this is\" : 4
+\"[ 	]+\" : \"this	is\" : 4
+\"[ 	]+\" : \"this	is\" : 4
+\"[ 	]+\" : \"this
+is\" : nil
+\"[ 	]+\" : \"this
+is\" : nil
+\"[ 	]+\\\\|	+\" : \"thisis\" : nil
+\"[ 	]+\\\\|	+\" : \"this is\" : 4
+\"[ 	]+\\\\|	+\" : \"this	is\" : 4
+\"[ 	]+\\\\|	+\" : \"this	is\" : 4
+\"[ 	]+\\\\|	+\" : \"this
+is\" : nil
+\"[ 	]+\\\\|	+\" : \"this
+is\" : nil
+\"[ 	
+]+\\\\|	+\\\\|
++\" : \"thisis\" : nil
+\"[ 	
+]+\\\\|	+\\\\|
++\" : \"this is\" : 4
+\"[ 	
+]+\\\\|	+\\\\|
++\" : \"this	is\" : 4
+\"[ 	
+]+\\\\|	+\\\\|
++\" : \"this	is\" : 4
+\"[ 	
+]+\\\\|	+\\\\|
++\" : \"this
+is\" : 4
+\"[ 	
+]+\\\\|	+\\\\|
++\" : \"this
+is\" : 4
+
+
+\"[ 	]+\" : \"thisis\" : nil
+\"[ 	]+\" : \"this is\" : 7
+\"[ 	]+\" : \"this	is\" : 7
+\"[ 	]+\" : \"this	is\" : 7
+\"[ 	]+\" : \"this
+is\" : nil
+\"[ 	]+\" : \"this
+is\" : nil
+\"[ 	]+\\\\|	+\" : \"thisis\" : nil
+\"[ 	]+\\\\|	+\" : \"this is\" : 7
+\"[ 	]+\\\\|	+\" : \"this	is\" : 7
+\"[ 	]+\\\\|	+\" : \"this	is\" : 7
+\"[ 	]+\\\\|	+\" : \"this
+is\" : nil
+\"[ 	]+\\\\|	+\" : \"this
+is\" : nil
+\"[ 	
+]+\\\\|	+\\\\|
++\" : \"thisis\" : 2
+\"[ 	
+]+\\\\|	+\\\\|
++\" : \"this is\" : 2
+\"[ 	
+]+\\\\|	+\\\\|
++\" : \"this	is\" : 2
+\"[ 	
+]+\\\\|	+\\\\|
++\" : \"this	is\" : 2
+\"[ 	
+]+\\\\|	+\\\\|
++\" : \"this
+is\" : 2
+\"[ 	
+]+\\\\|	+\\\\|
++\" : \"this
+is\" : 2
 "
 #+end_example
 
