@@ -27,6 +27,7 @@
 ;; - [be][edw2my] for "beginning", "end" (of week, month, etc.)
 ;; - recurring
 ;; - multiple calendars -- enable, disable
+;; - URL
 ;; - CALDAV!!!
 ;; - when CALDAV, updates
 
@@ -456,6 +457,11 @@ returns the new date."
             (insert (format "%s" (mycal:onelineize evlocation))))))
     (move-to-column 80 t)
     (insert "\n")
+    (if evdescription
+        (let ((pre-point (point)))
+          (insert evdescription)        ; would be nice to insert at col
+          (insert "\n")
+          (add-text-properties pre-point (point) (list 'invisible t))))
     (let ((end (1- (point)))
           (color (if (= (% counter 2) 0) "gray70" "gray80"))) ; XXX customize
       ;; XXX really need fixed width buffer, fill rectangles
@@ -467,12 +473,12 @@ returns the new date."
            (list 'mouse-face 'highlight 'help-echo evdescription))))))
 
 (defun mycal:open-ical-calendar (url &optional cfwbuffer)
-  (message "calling mycal:ical-get-data")
+  (message "calling mycal:ical-get-data") ; XXX
   (let* ((unsorted (copy-sequence (mycal:ical-get-data url)))
-         (foo (message "calling sort"))
+         (foo (message "calling sort")) ; XXX
          (sorted (sort (cdr unsorted) 'mycal:start-date-time-less-p)))
     ;; create a buffer
-    (message "buffer overhead")
+    (message "buffer overhead")         ; XXX
     (set-buffer (get-buffer-create "*mycal-event-list*"))
     (setq-local buffer-read-only nil)
     (erase-buffer)
@@ -485,7 +491,7 @@ returns the new date."
     ;; (setq buffer-read-only t)
     (let ((cur-date nil)
           (counter 0))
-      (message "starting dolist")
+      (message "starting dolist")       ; XXX
       (dolist (event sorted)
         (setq counter (1+ counter))
         (let ((evdate (mycal:event-start-date event)))
@@ -495,7 +501,7 @@ returns the new date."
               (setq cur-date (mycal:spit-date event)))
           (setq mycal:event-indices (push (point) mycal:event-indices))
           (mycal:spit-event event counter))))
-    (message "done with dolist")
+    (message "done with dolist")        ; XXX
     (setq mycal:event-indices (reverse mycal:event-indices))
     (setq buffer-read-only t)
     (mycal:navi-today-command)
