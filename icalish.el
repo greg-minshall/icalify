@@ -157,16 +157,16 @@ KEYMAP-LIST is a source list like ((key . command) ... )."
 
 (defun mycal:lexiless-p (l1 l2)
   "is L1 less than L2, comparing element by element"
-  (or
-   (and (not l1) (not l2))
-   (let* ((one (car l1))
-          (two (car l2))
-          (test1 (if (not one) 0 one))
-          (test2 (if (not two) 0 two)))
-     (if (< test1 test2)
-         t
-       (and (= test1 test2)
-            (mycal:lexiless-p (cdr l1) (cdr l2)))))))
+  (if (and (not l1) (not l2))
+      nil
+    (let* ((one (car l1))
+           (two (car l2))
+           (test1 (if (not one) 0 one))
+           (test2 (if (not two) 0 two)))
+      (if (< test1 test2)
+          t
+        (and (= test1 test2)
+             (mycal:lexiless-p (cdr l1) (cdr l2)))))))
 
 (defun mycal:lexi-date (date)
   (list (nth 2 date) (nth 0 date) (nth 1 date)))
